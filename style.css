@@ -1,0 +1,59 @@
+/* スマホ対応のための基本設定 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Delius', cursive;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 10px;
+}
+
+main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* キャンバスのスタイル */
+canvas {
+  border: 2px solid #333;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  max-width: 100vw;
+  max-height: 100vh;
+  width: auto;
+  height: auto;
+  touch-action: none; /* タッチ操作の最適化 */
+}
+
+/* スマホ横向き時の調整 */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  body {
+    padding: 5px;
+  }
+  
+  canvas {
+    max-height: 90vh;
+  }
+}
+
+/* 非常に小さな画面での調整 */
+@media screen and (max-width: 320px) {
+  body {
+    padding: 5px;
+  }
+  
+  canvas {
+    border-width: 1px;
+  }
+}
