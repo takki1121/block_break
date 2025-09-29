@@ -60,6 +60,62 @@ const itemConfig = {
 // グローバル変数
 let currentState;
 let gameStarted = false;
+let gameStartTime;
+let pauseStartTime;
+let totalPauseTime = 0;
+
+// ゲーム状態管理システム
+const gameStateManager = {
+    previousState: null,
+    stateHistory: [],
+    transitionTimestamp: 0,
+    
+    // 状態遷移ログ記録
+    logTransition(fromState, toState) {
+        this.stateHistory.push({
+            from: fromState,
+            to: toState,
+            timestamp: Date.now(),
+            gameTime: millis()
+        });
+        console.log(`状態遷移: ${fromState} → ${toState} (${millis()}ms)`);
+    },
+    
+    // 状態変更
+    changeState(newState) {
+        if (currentState !== newState) {
+            this.logTransition(currentState, newState);
+            this.previousState = currentState;
+            currentState = newState;
+            this.transitionTimestamp = millis();
+            this.onStateEnter(newState);
+        }
+    },
+    
+    // 状態開始時の処理
+    onStateEnter(state) {
+        switch(state) {
+            case GAME_STATE.PLAYING:
+                if (this.previousState === GAME_STATE.PAUSED) {
+                    totalPauseTime += millis() - pauseStartTime;
+                } else if (this.previousState === GAME_STATE.OPENING) {
+                    gameStartTime = millis();
+                    totalPauseTime = 0;
+                }
+                break;
+            case GAME_STATE.PAUSED:
+                pauseStartTime = millis();
+                break;
+        }
+    },
+    
+    // 前の状態に戻る
+    revertToPreviousState() {
+        if (this.previousState) {
+            this.changeState(this.previousState);
+        }
+    }
+};
 
 // p5.js setup関数 - キャンバス初期化
 function setup() {
@@ -69,6 +125,11 @@ function setup() {
     // 基本設定の初期化
     currentState = GAME_STATE.OPENING;
     gameStarted = false;
+    gameStartTime = 0;
+    totalPauseTime = 0;
+    
+    // フォント設定
+    textFont('Delius');
     
     console.log("ブロック崩しゲーム初期化完了");
     console.log("キャンバスサイズ:", gameConfig.canvas.width, "x", gameConfig.canvas.height);
@@ -103,39 +164,82 @@ function draw() {
 
 // オープニング画面描画
 function drawOpening() {
-    // 背景
-    background(50, 50, 80);
+    // グラデーション背景
+    drawGradientBackground([30, 30, 60], [60, 30, 90]);
     
-    // タイトル
-    fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(48);
-    text("BLOCK BREAKER", width/2, height/3);
+    // タイトルロゴ効果
+    drawAnimatedTitle();
     
-    // 開始指示
-    textSize(24);
-    text("クリックしてゲーム開始", width/2, height/2 + 50);
+    // 開始指示（点滅効果）
+    if (Math.floor(millis() / 500) % 2 === 0) {
+        fill(255, 255, 100);
+        textAlign(CENTER, CENTER);
+        textSize(24);
+        text("クリックしてゲーム開始", width/2, height/2 + 50);
+    }
     
     // 操作説明
+    fill(200, 200, 255);
     textSize(16);
     text("マウス移動: パドル操作", width/2, height/2 + 100);
     text("スペース: ポーズ", width/2, height/2 + 120);
+    
+    // バージョン情報
+    fill(150);
+    textAlign(RIGHT, BOTTOM);
+    textSize(12);
+    text("v1.0 - Block Breaker Game", width - 10, height - 10);
+}
+
+// アニメーションタイトル描画
+function drawAnimatedTitle() {
+    let time = millis() * 0.001;
+    
+    fill(255, 100 + 100 * sin(time * 2), 100);
+    textAlign(CENTER, CENTER);
+    textSize(48 + 8 * sin(time * 3));
+    
+    // 文字に影効果
+    fill(0, 0, 0, 100);
+    text("BLOCK BREAKER", width/2 + 3, height/3 + 3);
+    
+    fill(255, 150 + 100 * sin(time * 2), 100);
+    text("BLOCK BREAKER", width/2, height/3);
 }
 
 // ゲーム中画面描画
 function drawGame() {
-    // 背景
-    background(30, 30, 50);
+    // 背景グラデーション
+    drawGradientBackground([20, 20, 40], [40, 20, 60]);
     
-    // ゲーム要素描画エリア
-    fill(255);
+    // ゲーム領域の境界線描画
+    drawGameBoundaries();
+    
+    // ゲーム要素描画エリア（プレースホルダー）
+    fill(100, 100, 150, 50);
+    noStroke();
+    rect(50, 100, width - 100, height - 200);
+    
+    fill(255, 255, 255, 150);
     textAlign(CENTER, CENTER);
     textSize(24);
-    text("ゲーム画面", width/2, height/2);
-    text("(実装予定)", width/2, height/2 + 30);
+    text("ゲーム画面", width/2, height/2 - 50);
+    text("(フェーズ3で実装予定)", width/2, height/2 - 20);
+    
+    // ゲーム経過時間表示
+    if (gameStartTime > 0) {
+        let gameTime = (millis() - gameStartTime - totalPauseTime) / 1000;
+        fill(200);
+        textAlign(CENTER, TOP);
+        textSize(14);
+        text("経過時間: " + gameTime.toFixed(1) + "秒", width/2, height/2 + 20);
+    }
     
     // 基本UI表示
     drawUI();
+    
+    // デバッグ情報
+    drawDebugInfo();
 }
 
 // ポーズ画面描画
@@ -185,18 +289,89 @@ function drawLevelClear() {
 
 // UI描画（スコア、ライフなど）
 function drawUI() {
-    fill(255);
+    // UIパネル背景
+    fill(0, 0, 0, 100);
+    rect(0, 0, width, 80);
+    
+    // スコア表示（左上）
+    fill(255, 255, 100);
     textAlign(LEFT, TOP);
+    textSize(18);
+    text("スコア", 15, 15);
+    textSize(24);
+    text(gameConfig.player.score.toString().padStart(6, '0'), 15, 35);
+    
+    // ライフ表示（右上）
+    drawLives();
+    
+    // レベル表示（右上、ライフの下）
+    fill(100, 255, 100);
+    textAlign(RIGHT, TOP);
     textSize(16);
+    text("レベル " + gameConfig.player.level, width - 15, 50);
     
-    // スコア表示
-    text("スコア: " + gameConfig.player.score, 10, 10);
+    // プログレスバー（レベル進行度）
+    drawLevelProgress();
+}
+
+// ライフ表示（ハート型）
+function drawLives() {
+    let heartSize = 20;
+    let heartSpacing = 25;
+    let startX = width - 15 - (gameConfig.player.maxLives * heartSpacing);
     
-    // ライフ表示
-    text("ライフ: " + gameConfig.player.lives, 10, 30);
+    for (let i = 0; i < gameConfig.player.maxLives; i++) {
+        let x = startX + i * heartSpacing;
+        let y = 25;
+        
+        if (i < gameConfig.player.lives) {
+            // 生きているライフ（赤いハート）
+            fill(255, 50, 50);
+        } else {
+            // 失ったライフ（グレーのハート）
+            fill(100, 100, 100);
+        }
+        
+        // ハート形状描画
+        drawHeart(x, y, heartSize);
+    }
+}
+
+// ハート形状描画関数
+function drawHeart(x, y, size) {
+    noStroke();
+    let s = size * 0.5;
     
-    // レベル表示
-    text("レベル: " + gameConfig.player.level, 10, 50);
+    // ハートの上部（2つの円）
+    ellipse(x - s * 0.3, y - s * 0.2, s * 0.8, s * 0.8);
+    ellipse(x + s * 0.3, y - s * 0.2, s * 0.8, s * 0.8);
+    
+    // ハートの下部（三角形）
+    triangle(x - s * 0.7, y, x + s * 0.7, y, x, y + s * 0.8);
+}
+
+// レベルプログレスバー
+function drawLevelProgress() {
+    let barWidth = 150;
+    let barHeight = 8;
+    let barX = width - barWidth - 15;
+    let barY = 65;
+    
+    // プログレスバー背景
+    fill(50, 50, 50);
+    rect(barX, barY, barWidth, barHeight);
+    
+    // プログレス（ダミーデータ：スコアベース）
+    let progress = (gameConfig.player.score % 1000) / 1000;
+    fill(100, 200, 255);
+    rect(barX, barY, barWidth * progress, barHeight);
+    
+    // プログレスバー枠線
+    noFill();
+    stroke(255);
+    strokeWeight(1);
+    rect(barX, barY, barWidth, barHeight);
+    noStroke();
 }
 
 // マウスクリック処理
@@ -204,21 +379,18 @@ function mousePressed() {
     switch(currentState) {
         case GAME_STATE.OPENING:
             // ゲーム開始
-            currentState = GAME_STATE.PLAYING;
+            gameStateManager.changeState(GAME_STATE.PLAYING);
             gameStarted = true;
-            console.log("ゲーム開始");
             break;
         case GAME_STATE.GAME_OVER:
             // リスタート
             resetGame();
-            currentState = GAME_STATE.PLAYING;
-            console.log("ゲームリスタート");
+            gameStateManager.changeState(GAME_STATE.PLAYING);
             break;
         case GAME_STATE.LEVEL_CLEAR:
             // 次のレベルへ
             gameConfig.player.level++;
-            currentState = GAME_STATE.PLAYING;
-            console.log("レベル " + gameConfig.player.level + " 開始");
+            gameStateManager.changeState(GAME_STATE.PLAYING);
             break;
     }
 }
@@ -227,11 +399,18 @@ function mousePressed() {
 function keyPressed() {
     if (key === ' ') { // スペースキー
         if (currentState === GAME_STATE.PLAYING) {
-            currentState = GAME_STATE.PAUSED;
-            console.log("ゲームポーズ");
+            gameStateManager.changeState(GAME_STATE.PAUSED);
         } else if (currentState === GAME_STATE.PAUSED) {
-            currentState = GAME_STATE.PLAYING;
-            console.log("ゲーム再開");
+            gameStateManager.changeState(GAME_STATE.PLAYING);
+        }
+    } else if (key === 'r' || key === 'R') { // リスタートキー
+        if (currentState === GAME_STATE.PLAYING || currentState === GAME_STATE.PAUSED) {
+            resetGame();
+            gameStateManager.changeState(GAME_STATE.PLAYING);
+        }
+    } else if (key === 'ESC' || keyCode === 27) { // ESCキー
+        if (currentState === GAME_STATE.PLAYING || currentState === GAME_STATE.PAUSED) {
+            gameStateManager.changeState(GAME_STATE.OPENING);
         }
     }
 }
@@ -245,8 +424,52 @@ function resetGame() {
     console.log("ゲームリセット完了");
 }
 
-// 状態遷移関数
+// 補助描画関数群
+
+// グラデーション背景描画
+function drawGradientBackground(color1, color2) {
+    for (let i = 0; i <= height; i++) {
+        let inter = map(i, 0, height, 0, 1);
+        let c = lerpColor(color(color1), color(color2), inter);
+        stroke(c);
+        line(0, i, width, i);
+    }
+    noStroke();
+}
+
+// ゲーム境界線描画
+function drawGameBoundaries() {
+    stroke(100, 150, 255);
+    strokeWeight(2);
+    noFill();
+    
+    // 上下左右の境界線
+    line(10, 90, width - 10, 90);           // 上
+    line(10, height - 30, width - 10, height - 30); // 下
+    line(10, 90, 10, height - 30);         // 左
+    line(width - 10, 90, width - 10, height - 30);  // 右
+    
+    noStroke();
+}
+
+// デバッグ情報表示
+function drawDebugInfo() {
+    if (keyIsPressed && key === 'd') { // Dキー押下時のみ表示
+        fill(0, 0, 0, 150);
+        rect(10, height - 120, 200, 80);
+        
+        fill(255, 255, 0);
+        textAlign(LEFT, TOP);
+        textSize(12);
+        text("デバッグ情報:", 15, height - 115);
+        text("現在の状態: " + currentState, 15, height - 100);
+        text("フレームレート: " + frameRate().toFixed(1), 15, height - 85);
+        text("マウス: (" + mouseX + ", " + mouseY + ")", 15, height - 70);
+        text("ゲーム時間: " + ((millis() - gameStartTime - totalPauseTime) / 1000).toFixed(1) + "s", 15, height - 55);
+    }
+}
+
+// 状態遷移関数（互換性のため残存）
 function changeGameState(newState) {
-    console.log("状態変更:", currentState, "->", newState);
-    currentState = newState;
+    gameStateManager.changeState(newState);
 }
