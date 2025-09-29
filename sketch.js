@@ -64,6 +64,12 @@ let gameStartTime;
 let pauseStartTime;
 let totalPauseTime = 0;
 
+// ゲームオブジェクト
+let ball;
+let paddle;
+let blocks = [];
+let items = [];
+
 // ゲーム状態管理システム
 const gameStateManager = {
     previousState: null,
@@ -101,6 +107,9 @@ const gameStateManager = {
                 } else if (this.previousState === GAME_STATE.OPENING) {
                     gameStartTime = millis();
                     totalPauseTime = 0;
+                    initializeGame();
+                } else if (this.previousState === GAME_STATE.LEVEL_CLEAR) {
+                    initializeLevel();
                 }
                 break;
             case GAME_STATE.PAUSED:
@@ -215,31 +224,147 @@ function drawGame() {
     // ゲーム領域の境界線描画
     drawGameBoundaries();
     
-    // ゲーム要素描画エリア（プレースホルダー）
-    fill(100, 100, 150, 50);
-    noStroke();
-    rect(50, 100, width - 100, height - 200);
-    
-    fill(255, 255, 255, 150);
-    textAlign(CENTER, CENTER);
-    textSize(24);
-    text("ゲーム画面", width/2, height/2 - 50);
-    text("(フェーズ3で実装予定)", width/2, height/2 - 20);
-    
-    // ゲーム経過時間表示
-    if (gameStartTime > 0) {
-        let gameTime = (millis() - gameStartTime - totalPauseTime) / 1000;
-        fill(200);
-        textAlign(CENTER, TOP);
-        textSize(14);
-        text("経過時間: " + gameTime.toFixed(1) + "秒", width/2, height/2 + 20);
-    }
+    // ゲームオブジェクトの更新と描画
+    updateGameObjects();
+    drawGameObjects();
     
     // 基本UI表示
     drawUI();
     
     // デバッグ情報
     drawDebugInfo();
+}
+
+// ゲームオブジェクト更新
+function updateGameObjects() {
+    if (!ball || !paddle) return;
+    
+    // ボール更新
+    ball.update();
+    
+    // パドル更新
+    paddle.update();
+    
+    // アイテム更新
+    for (let i = items.length - 1; i >= 0; i--) {
+        items[i].update();
+        
+        // パドルとの衝突判定
+        if (items[i].checkPaddleCollision(paddle)) {
+            items.splice(i, 1);
+            continue;
+        }
+        
+        // 画面外に出たアイテムを削除
+        if (items[i].collected) {
+            items.splice(i, 1);
+        }
+    }
+    
+    // 衝突判定
+    checkCollisions();
+    
+    // レベルクリア判定
+    checkLevelClear();
+}
+
+// ゲームオブジェクト描画
+function drawGameObjects() {
+    // ブロック描画
+    for (let block of blocks) {
+        if (!block.isDestroyed || block.destroyAnimation > 0) {
+            block.draw();
+        }
+    }
+    
+    // アイテム描画
+    for (let item of items) {
+        item.draw();
+    }
+    
+    // パドル描画
+    if (paddle) paddle.draw();
+    
+    // ボール描画
+    if (ball) ball.draw();
+}
+
+// 衝突判定メイン関数
+function checkCollisions() {
+    if (!ball || !paddle) return;
+    
+    // ボール vs パドル衝突判定
+    checkBallPaddleCollision();
+    
+    // ボール vs ブロック衝突判定
+    checkBallBlockCollision();
+}
+
+// ボール vs パドル衝突判定
+function checkBallPaddleCollision() {
+    let paddleBounds = paddle.getBounds();
+    
+    if (ball.position.x + ball.radius > paddleBounds.left &&
+        ball.position.x - ball.radius < paddleBounds.right &&
+        ball.position.y + ball.radius > paddleBounds.top &&
+        ball.position.y - ball.radius < paddleBounds.bottom &&
+        ball.velocity.vy > 0) { // 下向きの時のみ
+        
+        // 反射角度計算（パドルのどの部分に当たったかで変わる）
+        let hitPos = (ball.position.x - paddle.position.x) / (paddle.width / 2);
+        hitPos = constrain(hitPos, -1, 1);
+        
+        // 新しい速度設定
+        ball.velocity.vx = hitPos * 4; // 横方向の速度
+        ball.velocity.vy = -Math.abs(ball.velocity.vy); // 上向きに反射
+        
+        // ボールがパドルに埋まらないように位置調整
+        ball.position.y = paddleBounds.top - ball.radius;
+    }
+}
+
+// ボール vs ブロック衝突判定
+function checkBallBlockCollision() {
+    for (let block of blocks) {
+        if (block.isDestroyed) continue;
+        
+        let bounds = block.getBounds();
+        
+        // 簡易的な矩形 vs 円の衝突判定
+        if (ball.position.x + ball.radius > bounds.left &&
+            ball.position.x - ball.radius < bounds.right &&
+            ball.position.y + ball.radius > bounds.top &&
+            ball.position.y - ball.radius < bounds.bottom) {
+            
+            // 衝突面判定（簡易版）
+            let fromLeft = ball.position.x < bounds.left + 5;
+            let fromRight = ball.position.x > bounds.right - 5;
+            let fromTop = ball.position.y < bounds.top + 5;
+            let fromBottom = ball.position.y > bounds.bottom - 5;
+            
+            if (fromLeft || fromRight) {
+                ball.velocity.vx = -ball.velocity.vx;
+            }
+            if (fromTop || fromBottom) {
+                ball.velocity.vy = -ball.velocity.vy;
+            }
+            
+            // ブロック破壊
+            block.destroy();
+            break; // 一度に一つのブロックのみ処理
+        }
+    }
+}
+
+// レベルクリア判定
+function checkLevelClear() {
+    let remainingBlocks = blocks.filter(block => !block.isDestroyed).length;
+    
+    if (remainingBlocks === 0) {
+        gameConfig.player.level++;
+        gameConfig.player.score += 100; // レベルクリアボーナス
+        gameStateManager.changeState(GAME_STATE.LEVEL_CLEAR);
+    }
 }
 
 // ポーズ画面描画
@@ -424,6 +549,39 @@ function resetGame() {
     console.log("ゲームリセット完了");
 }
 
+// ゲーム初期化
+function initializeGame() {
+    // ゲームオブジェクト作成
+    ball = new Ball();
+    paddle = new Paddle();
+    items = [];
+    
+    // ブロック生成
+    generateBlocks();
+    
+    console.log("ゲーム初期化完了 - レベル", gameConfig.player.level);
+}
+
+// レベル初期化（レベルアップ時）
+function initializeLevel() {
+    // ボールとパドルリセット
+    if (ball) ball.reset();
+    if (paddle) {
+        paddle.position.x = width/2;
+        paddle.isExpanded = false;
+        paddle.isSlowed = false;
+        paddle.width = gameConfig.paddle.width;
+    }
+    
+    // アイテムクリア
+    items = [];
+    
+    // 新しいブロック生成
+    generateBlocks();
+    
+    console.log("レベル", gameConfig.player.level, "初期化完了");
+}
+
 // 補助描画関数群
 
 // グラデーション背景描画
@@ -472,4 +630,518 @@ function drawDebugInfo() {
 // 状態遷移関数（互換性のため残存）
 function changeGameState(newState) {
     gameStateManager.changeState(newState);
+}
+
+// マウス移動処理
+function mouseMoved() {
+    // ゲーム中のみパドル制御
+    if (currentState === GAME_STATE.PLAYING && paddle) {
+        // パドルの更新処理内でマウス位置を参照するため、ここでは特に処理なし
+    }
+}
+
+// =============================================================================
+// ゲームオブジェクトクラス
+// =============================================================================
+
+// Ballクラス - ボール管理
+class Ball {
+    constructor(x, y, vx, vy) {
+        this.position = { x: x || width/2, y: y || height - 100 };
+        this.velocity = { vx: vx || 3, vy: vy || -3 };
+        this.radius = 8;
+        this.trail = []; // 残像効果用
+        this.maxTrailLength = 8;
+        this.color = color(255, 255, 100);
+    }
+    
+    // ボール位置更新
+    update() {
+        // 残像追加
+        this.trail.push({ x: this.position.x, y: this.position.y });
+        if (this.trail.length > this.maxTrailLength) {
+            this.trail.shift();
+        }
+        
+        // 位置更新
+        this.position.x += this.velocity.vx;
+        this.position.y += this.velocity.vy;
+        
+        // 壁衝突判定
+        this.checkWallCollision();
+    }
+    
+    // ボール描画
+    draw() {
+        // 残像描画
+        for (let i = 0; i < this.trail.length; i++) {
+            let alpha = map(i, 0, this.trail.length - 1, 30, 150);
+            let size = map(i, 0, this.trail.length - 1, this.radius * 0.3, this.radius * 0.8);
+            
+            fill(255, 255, 100, alpha);
+            noStroke();
+            ellipse(this.trail[i].x, this.trail[i].y, size * 2);
+        }
+        
+        // メインボール描画
+        fill(this.color);
+        stroke(255, 255, 255, 200);
+        strokeWeight(2);
+        ellipse(this.position.x, this.position.y, this.radius * 2);
+        
+        // ボール内部のハイライト
+        fill(255, 255, 255, 150);
+        noStroke();
+        ellipse(this.position.x - 2, this.position.y - 2, this.radius * 0.8);
+    }
+    
+    // 壁衝突判定と反射処理
+    checkWallCollision() {
+        let bounced = false;
+        
+        // 左右の壁
+        if (this.position.x - this.radius <= 10) {
+            this.position.x = 10 + this.radius;
+            this.velocity.vx = Math.abs(this.velocity.vx);
+            bounced = true;
+        } else if (this.position.x + this.radius >= width - 10) {
+            this.position.x = width - 10 - this.radius;
+            this.velocity.vx = -Math.abs(this.velocity.vx);
+            bounced = true;
+        }
+        
+        // 上の壁
+        if (this.position.y - this.radius <= 90) {
+            this.position.y = 90 + this.radius;
+            this.velocity.vy = Math.abs(this.velocity.vy);
+            bounced = true;
+        }
+        
+        // 下の壁（ライフ減少）
+        if (this.position.y - this.radius >= height - 30) {
+            this.onBottomHit();
+        }
+        
+        return bounced;
+    }
+    
+    // 底に到達した時の処理
+    onBottomHit() {
+        gameConfig.player.lives--;
+        if (gameConfig.player.lives <= 0) {
+            gameStateManager.changeState(GAME_STATE.GAME_OVER);
+        } else {
+            // ボールをリセット
+            this.reset();
+        }
+    }
+    
+    // ボールリセット
+    reset() {
+        this.position.x = width/2;
+        this.position.y = height - 100;
+        this.velocity.vx = random(-3, 3);
+        this.velocity.vy = -3;
+        this.trail = [];
+    }
+}
+
+// Paddleクラス - パドル管理
+class Paddle {
+    constructor(x, y) {
+        this.position = { x: x || width/2, y: y || height - 50 };
+        this.width = gameConfig.paddle.width;
+        this.height = gameConfig.paddle.height;
+        this.isExpanded = false;
+        this.isSlowed = false;
+        this.expandTimer = 0;
+        this.slowTimer = 0;
+        this.baseSpeed = 1.0;
+        this.color = color(100, 200, 255);
+    }
+    
+    // パドル更新
+    update() {
+        // マウス位置に追従（制限付き）
+        let targetX = mouseX;
+        targetX = constrain(targetX, 10 + this.width/2, width - 10 - this.width/2);
+        
+        // 速度制限適用
+        let speed = this.baseSpeed;
+        if (this.isSlowed) speed *= 0.5;
+        
+        this.position.x = lerp(this.position.x, targetX, 0.15 * speed);
+        
+        // 効果時間管理
+        if (this.isExpanded) {
+            this.expandTimer--;
+            if (this.expandTimer <= 0) {
+                this.isExpanded = false;
+                this.width = gameConfig.paddle.width;
+            }
+        }
+        
+        if (this.isSlowed) {
+            this.slowTimer--;
+            if (this.slowTimer <= 0) {
+                this.isSlowed = false;
+            }
+        }
+    }
+    
+    // パドル描画
+    draw() {
+        let paddleColor = this.color;
+        
+        // 効果に応じて色変更
+        if (this.isExpanded) {
+            paddleColor = color(100, 255, 100); // 緑色（拡大中）
+        } else if (this.isSlowed) {
+            paddleColor = color(255, 100, 100); // 赤色（速度低下中）
+        }
+        
+        // パドル本体
+        fill(paddleColor);
+        stroke(255);
+        strokeWeight(2);
+        rectMode(CENTER);
+        rect(this.position.x, this.position.y, this.width, this.height, 5);
+        
+        // パドル上部のハイライト
+        fill(255, 255, 255, 100);
+        noStroke();
+        rect(this.position.x, this.position.y - 2, this.width - 4, 3, 3);
+        
+        // 効果時間表示
+        if (this.isExpanded || this.isSlowed) {
+            this.drawEffectTimer();
+        }
+    }
+    
+    // 効果時間バー描画
+    drawEffectTimer() {
+        let barWidth = this.width;
+        let barHeight = 3;
+        let barY = this.position.y + this.height/2 + 8;
+        
+        // 背景バー
+        fill(50, 50, 50);
+        noStroke();
+        rectMode(CENTER);
+        rect(this.position.x, barY, barWidth, barHeight);
+        
+        // 進行バー
+        let progress = 0;
+        let effectColor = color(255);
+        
+        if (this.isExpanded) {
+            progress = this.expandTimer / (gameConfig.paddle.expandDuration / 16.67); // 60FPS換算
+            effectColor = color(100, 255, 100);
+        } else if (this.isSlowed) {
+            progress = this.slowTimer / (gameConfig.paddle.slowDuration / 16.67);
+            effectColor = color(255, 100, 100);
+        }
+        
+        fill(effectColor);
+        rect(this.position.x - barWidth/2 + (barWidth * progress)/2, barY, barWidth * progress, barHeight);
+    }
+    
+    // パドル拡大効果
+    expandPaddle() {
+        this.isExpanded = true;
+        this.width = gameConfig.paddle.expandedWidth;
+        this.expandTimer = gameConfig.paddle.expandDuration / 16.67; // フレーム数に変換
+    }
+    
+    // パドル速度低下効果
+    slowPaddle() {
+        this.isSlowed = true;
+        this.slowTimer = gameConfig.paddle.slowDuration / 16.67; // フレーム数に変換
+    }
+    
+    // 境界取得（衝突判定用）
+    getBounds() {
+        return {
+            left: this.position.x - this.width/2,
+            right: this.position.x + this.width/2,
+            top: this.position.y - this.height/2,
+            bottom: this.position.y + this.height/2
+        };
+    }
+}
+
+// Blockクラス - ブロック管理
+class Block {
+    constructor(x, y, color, isSpecial = false, itemType = null) {
+        this.position = { x, y };
+        this.width = blockLayout.width;
+        this.height = blockLayout.height;
+        this.color = color;
+        this.isSpecial = isSpecial;
+        this.itemType = itemType;
+        this.isDestroyed = false;
+        this.destroyAnimation = 0;
+    }
+    
+    // ブロック描画
+    draw() {
+        if (this.isDestroyed && this.destroyAnimation <= 0) return;
+        
+        push();
+        translate(this.position.x, this.position.y);
+        
+        if (this.destroyAnimation > 0) {
+            // 破壊アニメーション
+            let scale = map(this.destroyAnimation, 30, 0, 1, 0);
+            let alpha = map(this.destroyAnimation, 30, 0, 255, 0);
+            
+            scale(scale);
+            tint(255, alpha);
+            this.destroyAnimation--;
+        }
+        
+        // ブロック本体
+        fill(this.color);
+        stroke(255, 255, 255, 150);
+        strokeWeight(1);
+        rectMode(CORNER);
+        rect(0, 0, this.width, this.height, 3);
+        
+        // 特殊ブロックの模様
+        if (this.isSpecial && this.itemType) {
+            this.drawSpecialPattern();
+        }
+        
+        // ブロックのハイライト
+        fill(255, 255, 255, 100);
+        noStroke();
+        rect(2, 2, this.width - 4, 3, 2);
+        
+        pop();
+    }
+    
+    // 特殊ブロックの模様描画
+    drawSpecialPattern() {
+        let centerX = this.width / 2;
+        let centerY = this.height / 2;
+        
+        fill(255, 255, 255, 150);
+        noStroke();
+        
+        switch(this.itemType) {
+            case 'LIFE_UP':
+                // ハート模様
+                drawHeart(centerX, centerY, 8);
+                break;
+            case 'PADDLE_EXPAND':
+                // 盾模様
+                ellipse(centerX, centerY, 12);
+                fill(this.color);
+                ellipse(centerX, centerY, 8);
+                break;
+            case 'BALL_MULTIPLY':
+                // 複数ボール模様
+                ellipse(centerX - 3, centerY, 4);
+                ellipse(centerX + 3, centerY, 4);
+                ellipse(centerX, centerY - 3, 4);
+                break;
+            case 'SLOW_PENALTY':
+                // 骸骨模様
+                fill(255, 100, 100, 150);
+                rect(centerX - 4, centerY - 2, 8, 4);
+                break;
+        }
+    }
+    
+    // ブロック破壊
+    destroy() {
+        if (!this.isDestroyed) {
+            this.isDestroyed = true;
+            this.destroyAnimation = 30; // 30フレームのアニメーション
+            
+            // スコア加算
+            gameConfig.player.score += 10;
+            
+            // 特殊ブロックならアイテム生成
+            if (this.isSpecial && this.itemType) {
+                this.spawnItem();
+            }
+            
+            return true;
+        }
+        return false;
+    }
+    
+    // アイテム生成
+    spawnItem() {
+        // アイテム生成確率チェック
+        let spawnChance = random(100);
+        let shouldSpawn = false;
+        
+        if (this.itemType === 'SLOW_PENALTY') {
+            shouldSpawn = spawnChance < 70; // ペナルティは70%で出現
+        } else {
+            shouldSpawn = spawnChance < 50; // 良いアイテムは50%で出現
+        }
+        
+        if (shouldSpawn) {
+            let item = new Item(
+                this.position.x + this.width/2,
+                this.position.y + this.height/2,
+                this.itemType
+            );
+            items.push(item);
+        }
+    }
+    
+    // 境界取得（衝突判定用）
+    getBounds() {
+        return {
+            left: this.position.x,
+            right: this.position.x + this.width,
+            top: this.position.y,
+            bottom: this.position.y + this.height
+        };
+    }
+}
+
+// Itemクラス - アイテム管理
+class Item {
+    constructor(x, y, type) {
+        this.position = { x, y };
+        this.type = type;
+        this.velocity = { vx: 0, vy: 2 };
+        this.animationFrame = 0;
+        this.size = 16;
+        this.collected = false;
+    }
+    
+    // アイテム更新
+    update() {
+        this.position.x += this.velocity.vx;
+        this.position.y += this.velocity.vy;
+        this.animationFrame++;
+        
+        // 画面下に落下したら削除
+        if (this.position.y > height) {
+            this.collected = true;
+        }
+    }
+    
+    // アイテム描画
+    draw() {
+        if (this.collected) return;
+        
+        push();
+        translate(this.position.x, this.position.y);
+        
+        // 回転アニメーション
+        rotate(this.animationFrame * 0.05);
+        
+        // アイテムの種類に応じた描画
+        switch(this.type) {
+            case 'LIFE_UP':
+                fill(255, 100, 100);
+                stroke(255);
+                strokeWeight(2);
+                drawHeart(0, 0, this.size/2);
+                break;
+            case 'PADDLE_EXPAND':
+                fill(100, 255, 100);
+                stroke(255);
+                strokeWeight(2);
+                ellipse(0, 0, this.size);
+                fill(50, 200, 50);
+                ellipse(0, 0, this.size * 0.6);
+                break;
+            case 'BALL_MULTIPLY':
+                fill(255, 255, 100);
+                stroke(255);
+                strokeWeight(2);
+                ellipse(0, 0, this.size);
+                ellipse(-4, 0, this.size * 0.6);
+                ellipse(4, 0, this.size * 0.6);
+                break;
+            case 'SLOW_PENALTY':
+                fill(255, 50, 50);
+                stroke(200, 0, 0);
+                strokeWeight(2);
+                rect(-this.size/2, -this.size/2, this.size, this.size, 2);
+                fill(200, 0, 0);
+                ellipse(-2, -2, 3);
+                ellipse(2, -2, 3);
+                rect(-4, 2, 8, 2);
+                break;
+        }
+        
+        pop();
+    }
+    
+    // パドルとの衝突判定
+    checkPaddleCollision(paddle) {
+        if (this.collected) return false;
+        
+        let paddleBounds = paddle.getBounds();
+        
+        if (this.position.x > paddleBounds.left && 
+            this.position.x < paddleBounds.right &&
+            this.position.y > paddleBounds.top && 
+            this.position.y < paddleBounds.bottom) {
+            
+            this.collected = true;
+            this.applyEffect(paddle);
+            return true;
+        }
+        return false;
+    }
+    
+    // アイテム効果適用
+    applyEffect(paddle) {
+        switch(this.type) {
+            case 'LIFE_UP':
+                if (gameConfig.player.lives < gameConfig.player.maxLives) {
+                    gameConfig.player.lives++;
+                }
+                break;
+            case 'PADDLE_EXPAND':
+                paddle.expandPaddle();
+                break;
+            case 'BALL_MULTIPLY':
+                // 将来的にボール複製実装
+                gameConfig.player.score += 50; // とりあえずボーナススコア
+                break;
+            case 'SLOW_PENALTY':
+                paddle.slowPaddle();
+                break;
+        }
+    }
+}
+
+// ブロック配置生成関数
+function generateBlocks() {
+    blocks = [];
+    
+    let startX = (width - (blockLayout.cols * (blockLayout.width + blockLayout.spacing) - blockLayout.spacing)) / 2;
+    let startY = 120;
+    
+    for (let row = 0; row < blockLayout.rows; row++) {
+        for (let col = 0; col < blockLayout.cols; col++) {
+            let x = startX + col * (blockLayout.width + blockLayout.spacing);
+            let y = startY + row * (blockLayout.height + blockLayout.spacing);
+            
+            // ランダム色選択
+            let blockColor = color(blockLayout.colors[Math.floor(random(blockLayout.colors.length))]);
+            
+            // 特殊ブロック判定
+            let isSpecial = random(1) < blockLayout.specialBlockRatio;
+            let itemType = null;
+            
+            if (isSpecial) {
+                let itemTypes = Object.keys(itemConfig.types);
+                itemType = itemTypes[Math.floor(random(itemTypes.length))];
+            }
+            
+            blocks.push(new Block(x, y, blockColor, isSpecial, itemType));
+        }
+    }
 }
