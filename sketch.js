@@ -70,6 +70,10 @@ let paddle;
 let blocks = [];
 let items = [];
 
+// スコアシステム
+let highScore = 0;
+let scoreMultiplier = 1;
+
 // ゲーム状態管理システム
 const gameStateManager = {
     previousState: null,
@@ -137,11 +141,16 @@ function setup() {
     gameStartTime = 0;
     totalPauseTime = 0;
     
+    // スコアシステム初期化
+    loadHighScore();
+    scoreMultiplier = 1;
+    
     // フォント設定
     textFont('Delius');
     
     console.log("ブロック崩しゲーム初期化完了");
     console.log("キャンバスサイズ:", gameConfig.canvas.width, "x", gameConfig.canvas.height);
+    console.log("ハイスコア:", highScore);
 }
 
 // p5.js draw関数 - メインゲームループ
@@ -179,6 +188,12 @@ function drawOpening() {
     // タイトルロゴ効果
     drawAnimatedTitle();
     
+    // ハイスコア表示
+    fill(255, 200, 100);
+    textAlign(CENTER, CENTER);
+    textSize(20);
+    text("ハイスコア: " + highScore.toString().padStart(6, '0'), width/2, height/3 + 50);
+    
     // 開始指示（点滅効果）
     if (Math.floor(millis() / 500) % 2 === 0) {
         fill(255, 255, 100);
@@ -192,6 +207,7 @@ function drawOpening() {
     textSize(16);
     text("マウス移動: パドル操作", width/2, height/2 + 100);
     text("スペース: ポーズ", width/2, height/2 + 120);
+    text("R: リスタート / ESC: メニューに戻る", width/2, height/2 + 140);
     
     // バージョン情報
     fill(150);
@@ -235,8 +251,8 @@ function drawGame() {
     drawDebugInfo();
 }
 
-// ゲームオブジェクト更新
-function updateGameObjects() {
+// メインゲーム更新関数（フェーズ4実装）
+function updateGame() {
     if (!ball || !paddle) return;
     
     // ボール更新
@@ -245,12 +261,29 @@ function updateGameObjects() {
     // パドル更新
     paddle.update();
     
-    // アイテム更新
+    // アイテム更新処理
+    updateItems();
+    
+    // 衝突判定処理
+    checkAllCollisions();
+    
+    // ゲーム状態判定
+    checkGameConditions();
+}
+
+// ゲームオブジェクト更新（旧関数、互換性のため）
+function updateGameObjects() {
+    updateGame();
+}
+
+// アイテム更新処理
+function updateItems() {
     for (let i = items.length - 1; i >= 0; i--) {
         items[i].update();
         
         // パドルとの衝突判定
         if (items[i].checkPaddleCollision(paddle)) {
+            console.log("アイテム取得:", items[i].type);
             items.splice(i, 1);
             continue;
         }
@@ -260,12 +293,24 @@ function updateGameObjects() {
             items.splice(i, 1);
         }
     }
+}
+
+// 全衝突判定チェック
+function checkAllCollisions() {
+    // ボール vs パドル衝突判定
+    checkBallPaddleCollision();
     
-    // 衝突判定
-    checkCollisions();
-    
+    // ボール vs ブロック衝突判定（改善版）
+    checkBallBlockCollisionImproved();
+}
+
+// ゲーム条件判定（ライフ、レベルクリア、ゲームオーバー）
+function checkGameConditions() {
     // レベルクリア判定
-    checkLevelClear();
+    checkLevelClearCondition();
+    
+    // ゲームオーバー判定
+    checkGameOverCondition();
 }
 
 // ゲームオブジェクト描画
@@ -323,48 +368,162 @@ function checkBallPaddleCollision() {
     }
 }
 
-// ボール vs ブロック衝突判定
-function checkBallBlockCollision() {
-    for (let block of blocks) {
+// ボール vs ブロック衝突判定（改善版）
+function checkBallBlockCollisionImproved() {
+    let collisionDetected = false;
+    
+    for (let i = 0; i < blocks.length && !collisionDetected; i++) {
+        let block = blocks[i];
         if (block.isDestroyed) continue;
         
         let bounds = block.getBounds();
         
-        // 簡易的な矩形 vs 円の衝突判定
-        if (ball.position.x + ball.radius > bounds.left &&
-            ball.position.x - ball.radius < bounds.right &&
-            ball.position.y + ball.radius > bounds.top &&
-            ball.position.y - ball.radius < bounds.bottom) {
+        // より精密な矩形 vs 円の衝突判定
+        if (isCircleRectCollision(ball.position.x, ball.position.y, ball.radius, bounds)) {
             
-            // 衝突面判定（簡易版）
-            let fromLeft = ball.position.x < bounds.left + 5;
-            let fromRight = ball.position.x > bounds.right - 5;
-            let fromTop = ball.position.y < bounds.top + 5;
-            let fromBottom = ball.position.y > bounds.bottom - 5;
+            // 衝突面の正確な判定
+            let collision = getCollisionSide(ball.position.x, ball.position.y, ball.radius, bounds);
             
-            if (fromLeft || fromRight) {
+            // 反射処理
+            if (collision.horizontal) {
                 ball.velocity.vx = -ball.velocity.vx;
-            }
-            if (fromTop || fromBottom) {
-                ball.velocity.vy = -ball.velocity.vy;
+                // ボール位置補正
+                if (collision.side === 'left') {
+                    ball.position.x = bounds.left - ball.radius;
+                } else if (collision.side === 'right') {
+                    ball.position.x = bounds.right + ball.radius;
+                }
             }
             
-            // ブロック破壊
-            block.destroy();
-            break; // 一度に一つのブロックのみ処理
+            if (collision.vertical) {
+                ball.velocity.vy = -ball.velocity.vy;
+                // ボール位置補正
+                if (collision.side === 'top') {
+                    ball.position.y = bounds.top - ball.radius;
+                } else if (collision.side === 'bottom') {
+                    ball.position.y = bounds.bottom + ball.radius;
+                }
+            }
+            
+            // ブロック破壊処理
+            if (block.destroy()) {
+                console.log("ブロック破壊 - スコア:", gameConfig.player.score);
+                collisionDetected = true; // 重要: 一度に一つのブロックのみ処理
+            }
         }
     }
 }
 
-// レベルクリア判定
-function checkLevelClear() {
+// 円と矩形の衝突判定
+function isCircleRectCollision(circleX, circleY, radius, rect) {
+    // 最も近い点を見つける
+    let closestX = constrain(circleX, rect.left, rect.right);
+    let closestY = constrain(circleY, rect.top, rect.bottom);
+    
+    // 距離を計算
+    let distanceX = circleX - closestX;
+    let distanceY = circleY - closestY;
+    let distanceSquared = distanceX * distanceX + distanceY * distanceY;
+    
+    return distanceSquared < (radius * radius);
+}
+
+// 衝突面判定
+function getCollisionSide(circleX, circleY, radius, rect) {
+    let result = { horizontal: false, vertical: false, side: '' };
+    
+    // 中心位置での判定
+    let centerX = rect.left + (rect.right - rect.left) / 2;
+    let centerY = rect.top + (rect.bottom - rect.top) / 2;
+    
+    let dx = circleX - centerX;
+    let dy = circleY - centerY;
+    
+    let width = (rect.right - rect.left) / 2;
+    let height = (rect.bottom - rect.top) / 2;
+    
+    let crossWidth = width * dy;
+    let crossHeight = height * dx;
+    
+    if (Math.abs(crossWidth) > Math.abs(crossHeight)) {
+        // 上下の衝突
+        result.vertical = true;
+        result.side = crossWidth > 0 ? 'bottom' : 'top';
+    } else {
+        // 左右の衝突
+        result.horizontal = true;
+        result.side = crossHeight > 0 ? 'right' : 'left';
+    }
+    
+    return result;
+}
+
+// 旧関数（互換性のため）
+function checkBallBlockCollision() {
+    checkBallBlockCollisionImproved();
+}
+
+// レベルクリア判定（改善版）
+function checkLevelClearCondition() {
     let remainingBlocks = blocks.filter(block => !block.isDestroyed).length;
     
     if (remainingBlocks === 0) {
-        gameConfig.player.level++;
-        gameConfig.player.score += 100; // レベルクリアボーナス
-        gameStateManager.changeState(GAME_STATE.LEVEL_CLEAR);
+        // レベルクリア処理
+        onLevelClear();
     }
+}
+
+// レベルクリア処理
+function onLevelClear() {
+    gameConfig.player.level++;
+    
+    // レベルクリアスコア（改善版）
+    let earnedScore = scoreSystem.onLevelClear();
+    
+    console.log("レベルクリア! レベル", gameConfig.player.level, "獲得スコア:", earnedScore, "総スコア:", gameConfig.player.score);
+    
+    // ハイスコア更新チェック
+    let isNewRecord = updateHighScore();
+    if (isNewRecord) {
+        console.log("新ハイスコア達成!");
+    }
+    
+    gameStateManager.changeState(GAME_STATE.LEVEL_CLEAR);
+}
+
+// ゲームオーバー判定
+function checkGameOverCondition() {
+    if (gameConfig.player.lives <= 0) {
+        onGameOver();
+    }
+}
+
+// ゲームオーバー処理
+function onGameOver() {
+    console.log("ゲームオーバー - 最終スコア:", gameConfig.player.score);
+    
+    // ハイスコア更新チェック
+    updateHighScore();
+    
+    gameStateManager.changeState(GAME_STATE.GAME_OVER);
+}
+
+// ライフ減少処理
+function loseLife() {
+    gameConfig.player.lives--;
+    console.log("ライフ減少 - 残り:", gameConfig.player.lives);
+    
+    if (gameConfig.player.lives <= 0) {
+        onGameOver();
+    } else {
+        // ボールリセット
+        if (ball) ball.reset();
+    }
+}
+
+// 旧関数（互換性のため）
+function checkLevelClear() {
+    checkLevelClearCondition();
 }
 
 // ポーズ画面描画
@@ -393,9 +552,30 @@ function drawGameOver() {
     textSize(48);
     text("GAME OVER", width/2, height/3);
     
+    // 最終スコア表示
     textSize(24);
-    text("スコア: " + gameConfig.player.score, width/2, height/2);
-    text("クリックでリスタート", width/2, height/2 + 50);
+    text("最終スコア: " + gameConfig.player.score.toString().padStart(6, '0'), width/2, height/2 - 20);
+    
+    // ハイスコア表示
+    if (gameConfig.player.score >= highScore) {
+        fill(255, 255, 100);
+        textSize(20);
+        text("★ 新ハイスコア! ★", width/2, height/2 + 10);
+    } else {
+        fill(200, 200, 200);
+        textSize(16);
+        text("ハイスコア: " + highScore.toString().padStart(6, '0'), width/2, height/2 + 10);
+    }
+    
+    // 到達レベル表示
+    fill(150, 255, 150);
+    textSize(18);
+    text("到達レベル: " + gameConfig.player.level, width/2, height/2 + 40);
+    
+    // リスタート指示
+    fill(255);
+    textSize(20);
+    text("クリックでリスタート", width/2, height/2 + 80);
 }
 
 // レベルクリア画面描画
@@ -407,9 +587,27 @@ function drawLevelClear() {
     textSize(48);
     text("LEVEL CLEAR!", width/2, height/3);
     
+    // レベル情報
     textSize(24);
-    text("レベル " + gameConfig.player.level + " クリア！", width/2, height/2);
-    text("クリックで次のレベルへ", width/2, height/2 + 50);
+    text("レベル " + (gameConfig.player.level - 1) + " クリア！", width/2, height/2 - 20);
+    
+    // スコア情報
+    fill(255, 255, 100);
+    textSize(20);
+    text("現在のスコア: " + gameConfig.player.score.toString().padStart(6, '0'), width/2, height/2 + 10);
+    
+    // マルチプライヤー情報
+    let multiplier = scoreSystem.calculateMultiplier();
+    if (multiplier > 1) {
+        fill(255, 200, 100);
+        textSize(16);
+        text("スコア倍率: x" + multiplier, width/2, height/2 + 35);
+    }
+    
+    // 次レベル指示
+    fill(255);
+    textSize(20);
+    text("クリックで次のレベルへ", width/2, height/2 + 70);
 }
 
 // UI描画（スコア、ライフなど）
@@ -437,6 +635,9 @@ function drawUI() {
     
     // プログレスバー（レベル進行度）
     drawLevelProgress();
+    
+    // スコア倍率表示
+    drawScoreMultiplier();
 }
 
 // ライフ表示（ハート型）
@@ -497,6 +698,26 @@ function drawLevelProgress() {
     strokeWeight(1);
     rect(barX, barY, barWidth, barHeight);
     noStroke();
+}
+
+// スコア倍率表示
+function drawScoreMultiplier() {
+    let multiplier = scoreSystem.calculateMultiplier();
+    
+    if (multiplier > 1) {
+        fill(255, 200, 100);
+        textAlign(RIGHT, TOP);
+        textSize(14);
+        text("倍率: x" + multiplier, width - 15, 15);
+    }
+    
+    // ハイスコア表示
+    if (gameConfig.player.score > 0) {
+        fill(200, 200, 200);
+        textAlign(CENTER, TOP);
+        textSize(12);
+        text("ハイスコア: " + highScore, width/2, 15);
+    }
 }
 
 // マウスクリック処理
@@ -641,6 +862,78 @@ function mouseMoved() {
 }
 
 // =============================================================================
+// スコアシステム実装（フェーズ4）
+// =============================================================================
+
+// ハイスコア読み込み
+function loadHighScore() {
+    let savedScore = localStorage.getItem('blockBreakerHighScore');
+    if (savedScore !== null) {
+        highScore = parseInt(savedScore);
+    } else {
+        highScore = 0;
+    }
+}
+
+// ハイスコア保存
+function saveHighScore() {
+    localStorage.setItem('blockBreakerHighScore', highScore.toString());
+    console.log("ハイスコア保存:", highScore);
+}
+
+// ハイスコア更新
+function updateHighScore() {
+    if (gameConfig.player.score > highScore) {
+        let oldHighScore = highScore;
+        highScore = gameConfig.player.score;
+        saveHighScore();
+        console.log("新ハイスコア!", oldHighScore, "→", highScore);
+        return true; // 新記録
+    }
+    return false;
+}
+
+// スコア計算システム
+const scoreSystem = {
+    // 基本スコア
+    blockDestroy: 10,
+    levelClear: 100,
+    lifeBonus: 50,
+    
+    // マルチプライヤー
+    calculateMultiplier() {
+        return Math.floor(gameConfig.player.level / 5) + 1;
+    },
+    
+    // スコア加算
+    addScore(baseScore, useMultiplier = true) {
+        let finalScore = baseScore;
+        if (useMultiplier) {
+            finalScore *= this.calculateMultiplier();
+        }
+        gameConfig.player.score += finalScore;
+        return finalScore;
+    },
+    
+    // ブロック破壊スコア
+    onBlockDestroy(blockType = 'normal') {
+        let baseScore = this.blockDestroy;
+        if (blockType === 'special') {
+            baseScore *= 2;
+        }
+        return this.addScore(baseScore);
+    },
+    
+    // レベルクリアスコア
+    onLevelClear() {
+        let baseScore = this.levelClear;
+        // 残りライフボーナス
+        let lifeBonus = (gameConfig.player.lives - 1) * this.lifeBonus;
+        return this.addScore(baseScore + lifeBonus);
+    }
+};
+
+// =============================================================================
 // ゲームオブジェクトクラス
 // =============================================================================
 
@@ -727,13 +1020,7 @@ class Ball {
     
     // 底に到達した時の処理
     onBottomHit() {
-        gameConfig.player.lives--;
-        if (gameConfig.player.lives <= 0) {
-            gameStateManager.changeState(GAME_STATE.GAME_OVER);
-        } else {
-            // ボールをリセット
-            this.reset();
-        }
+        loseLife(); // 改善されたライフ減少処理を使用
     }
     
     // ボールリセット
@@ -959,8 +1246,10 @@ class Block {
             this.isDestroyed = true;
             this.destroyAnimation = 30; // 30フレームのアニメーション
             
-            // スコア加算
-            gameConfig.player.score += 10;
+            // スコア加算（改善版）
+            let blockType = this.isSpecial ? 'special' : 'normal';
+            let earnedScore = scoreSystem.onBlockDestroy(blockType);
+            console.log("ブロック破壊スコア:", earnedScore, "総スコア:", gameConfig.player.score);
             
             // 特殊ブロックならアイテム生成
             if (this.isSpecial && this.itemType) {
