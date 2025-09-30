@@ -74,6 +74,15 @@ let items = [];
 let highScore = 0;
 let scoreMultiplier = 1;
 
+// 入力システム
+let inputSystem = {
+    currentInputX: 0,
+    targetInputX: 0,
+    inputSmoothing: 0.15,
+    isTouch: false,
+    lastTouchTime: 0
+};
+
 // ゲーム状態管理システム
 const gameStateManager = {
     previousState: null,
@@ -145,6 +154,12 @@ function setup() {
     loadHighScore();
     scoreMultiplier = 1;
     
+    // 入力システム初期化
+    initializeInputSystem();
+    
+    // レスポンシブ対応初期化
+    updateCanvasScale();
+    
     // フォント設定
     textFont('Delius');
     
@@ -194,20 +209,29 @@ function drawOpening() {
     textSize(20);
     text("ハイスコア: " + highScore.toString().padStart(6, '0'), width/2, height/3 + 50);
     
-    // 開始指示（点滅効果）
+    // 開始指示（点滅効果・デバイス対応）
     if (Math.floor(millis() / 500) % 2 === 0) {
         fill(255, 255, 100);
         textAlign(CENTER, CENTER);
         textSize(24);
-        text("クリックしてゲーム開始", width/2, height/2 + 50);
+        if (inputSystem.isTouch) {
+            text("タップしてゲーム開始", width/2, height/2 + 50);
+        } else {
+            text("クリックしてゲーム開始", width/2, height/2 + 50);
+        }
     }
     
-    // 操作説明
+    // 操作説明（デバイス対応）
     fill(200, 200, 255);
     textSize(16);
-    text("マウス移動: パドル操作", width/2, height/2 + 100);
-    text("スペース: ポーズ", width/2, height/2 + 120);
-    text("R: リスタート / ESC: メニューに戻る", width/2, height/2 + 140);
+    if (inputSystem.isTouch) {
+        text("タッチ移動: パドル操作", width/2, height/2 + 100);
+        text("タップ: ゲーム操作", width/2, height/2 + 120);
+    } else {
+        text("マウス移動: パドル操作", width/2, height/2 + 100);
+        text("スペース: ポーズ", width/2, height/2 + 120);
+        text("R: リスタート / ESC: メニューに戻る", width/2, height/2 + 140);
+    }
     
     // バージョン情報
     fill(150);
@@ -254,6 +278,9 @@ function drawGame() {
 // メインゲーム更新関数（フェーズ4実装）
 function updateGame() {
     if (!ball || !paddle) return;
+    
+    // 入力システム更新
+    updateInputSystem();
     
     // ボール更新
     ball.update();
@@ -572,10 +599,14 @@ function drawGameOver() {
     textSize(18);
     text("到達レベル: " + gameConfig.player.level, width/2, height/2 + 40);
     
-    // リスタート指示
+    // リスタート指示（デバイス対応）
     fill(255);
     textSize(20);
-    text("クリックでリスタート", width/2, height/2 + 80);
+    if (inputSystem.isTouch) {
+        text("タップでリスタート", width/2, height/2 + 80);
+    } else {
+        text("クリックでリスタート", width/2, height/2 + 80);
+    }
 }
 
 // レベルクリア画面描画
@@ -604,10 +635,14 @@ function drawLevelClear() {
         text("スコア倍率: x" + multiplier, width/2, height/2 + 35);
     }
     
-    // 次レベル指示
+    // 次レベル指示（デバイス対応）
     fill(255);
     textSize(20);
-    text("クリックで次のレベルへ", width/2, height/2 + 70);
+    if (inputSystem.isTouch) {
+        text("タップで次のレベルへ", width/2, height/2 + 70);
+    } else {
+        text("クリックで次のレベルへ", width/2, height/2 + 70);
+    }
 }
 
 // UI描画（スコア、ライフなど）
@@ -720,26 +755,8 @@ function drawScoreMultiplier() {
     }
 }
 
-// マウスクリック処理
-function mousePressed() {
-    switch(currentState) {
-        case GAME_STATE.OPENING:
-            // ゲーム開始
-            gameStateManager.changeState(GAME_STATE.PLAYING);
-            gameStarted = true;
-            break;
-        case GAME_STATE.GAME_OVER:
-            // リスタート
-            resetGame();
-            gameStateManager.changeState(GAME_STATE.PLAYING);
-            break;
-        case GAME_STATE.LEVEL_CLEAR:
-            // 次のレベルへ
-            gameConfig.player.level++;
-            gameStateManager.changeState(GAME_STATE.PLAYING);
-            break;
-    }
-}
+// 旧マウスクリック処理（互換性のため残存）
+// 実際の処理は新しい入力システムで行われる
 
 // キーボード入力処理
 function keyPressed() {
@@ -835,16 +852,22 @@ function drawGameBoundaries() {
 function drawDebugInfo() {
     if (keyIsPressed && key === 'd') { // Dキー押下時のみ表示
         fill(0, 0, 0, 150);
-        rect(10, height - 120, 200, 80);
+        rect(10, height - 160, 250, 120);
         
         fill(255, 255, 0);
         textAlign(LEFT, TOP);
         textSize(12);
-        text("デバッグ情報:", 15, height - 115);
-        text("現在の状態: " + currentState, 15, height - 100);
-        text("フレームレート: " + frameRate().toFixed(1), 15, height - 85);
-        text("マウス: (" + mouseX + ", " + mouseY + ")", 15, height - 70);
-        text("ゲーム時間: " + ((millis() - gameStartTime - totalPauseTime) / 1000).toFixed(1) + "s", 15, height - 55);
+        text("デバッグ情報:", 15, height - 155);
+        text("現在の状態: " + currentState, 15, height - 140);
+        text("フレームレート: " + frameRate().toFixed(1), 15, height - 125);
+        text("入力位置: " + inputSystem.currentInputX.toFixed(1), 15, height - 110);
+        text("入力デバイス: " + (inputSystem.isTouch ? "タッチ" : "マウス"), 15, height - 95);
+        text("スケール: " + gameConfig.canvas.scaleFactor.toFixed(2), 15, height - 80);
+        text("ゲーム時間: " + ((millis() - gameStartTime - totalPauseTime) / 1000).toFixed(1) + "s", 15, height - 65);
+        
+        if (paddle) {
+            text("パドル位置: " + paddle.position.x.toFixed(1), 15, height - 50);
+        }
     }
 }
 
@@ -853,11 +876,109 @@ function changeGameState(newState) {
     gameStateManager.changeState(newState);
 }
 
-// マウス移動処理
+// =============================================================================
+// 入力システム実装（フェーズ5）
+// =============================================================================
+
+// PC入力対応 - マウス移動処理
 function mouseMoved() {
-    // ゲーム中のみパドル制御
-    if (currentState === GAME_STATE.PLAYING && paddle) {
-        // パドルの更新処理内でマウス位置を参照するため、ここでは特に処理なし
+    // タッチデバイスでない場合のみ処理
+    if (!inputSystem.isTouch) {
+        updateInputPosition(mouseX);
+    }
+    return false; // デフォルト動作防止
+}
+
+// PC入力対応 - マウスクリック処理（改善版）
+function mousePressed() {
+    // タッチデバイスでない場合のみ処理
+    if (!inputSystem.isTouch) {
+        handleGameInput();
+    }
+    return false;
+}
+
+// モバイル入力対応 - タッチ移動処理
+function touchMoved() {
+    inputSystem.isTouch = true;
+    inputSystem.lastTouchTime = millis();
+    
+    if (touches.length > 0) {
+        // 最初のタッチポイントを使用
+        updateInputPosition(touches[0].x);
+    }
+    
+    return false; // デフォルトタッチ動作の無効化
+}
+
+// モバイル入力対応 - タッチ開始処理
+function touchStarted() {
+    inputSystem.isTouch = true;
+    inputSystem.lastTouchTime = millis();
+    
+    if (touches.length > 0) {
+        updateInputPosition(touches[0].x);
+        handleGameInput();
+    }
+    
+    return false; // デフォルトタッチ動作の無効化
+}
+
+// タッチ終了処理
+function touchEnded() {
+    return false;
+}
+
+// 入力座標の正規化処理
+function updateInputPosition(rawX) {
+    // スケールファクターを考慮した座標変換
+    let normalizedX = rawX / gameConfig.canvas.scaleFactor;
+    
+    // パドル移動範囲の制限
+    let paddleHalfWidth = paddle ? paddle.width / 2 : gameConfig.paddle.width / 2;
+    inputSystem.targetInputX = constrain(normalizedX, 
+        10 + paddleHalfWidth, 
+        gameConfig.canvas.width - 10 - paddleHalfWidth
+    );
+}
+
+// 統一されたゲーム入力処理
+function handleGameInput() {
+    switch(currentState) {
+        case GAME_STATE.OPENING:
+            // ゲーム開始
+            gameStateManager.changeState(GAME_STATE.PLAYING);
+            gameStarted = true;
+            break;
+        case GAME_STATE.GAME_OVER:
+            // リスタート
+            resetGame();
+            gameStateManager.changeState(GAME_STATE.PLAYING);
+            break;
+        case GAME_STATE.LEVEL_CLEAR:
+            // 次のレベルへ
+            gameConfig.player.level++;
+            gameStateManager.changeState(GAME_STATE.PLAYING);
+            break;
+        case GAME_STATE.PAUSED:
+            // ポーズ解除
+            gameStateManager.changeState(GAME_STATE.PLAYING);
+            break;
+    }
+}
+
+// 入力システム更新
+function updateInputSystem() {
+    // スムーズな入力補間
+    inputSystem.currentInputX = lerp(
+        inputSystem.currentInputX, 
+        inputSystem.targetInputX, 
+        inputSystem.inputSmoothing
+    );
+    
+    // タッチデバイス判定の自動リセット（5秒後）
+    if (inputSystem.isTouch && millis() - inputSystem.lastTouchTime > 5000) {
+        inputSystem.isTouch = false;
     }
 }
 
@@ -932,6 +1053,58 @@ const scoreSystem = {
         return this.addScore(baseScore + lifeBonus);
     }
 };
+
+// =============================================================================
+// レスポンシブ対応・入力システム初期化
+// =============================================================================
+
+// 入力システム初期化
+function initializeInputSystem() {
+    inputSystem.currentInputX = gameConfig.canvas.width / 2;
+    inputSystem.targetInputX = gameConfig.canvas.width / 2;
+    inputSystem.isTouch = false;
+    inputSystem.lastTouchTime = 0;
+    
+    // タッチデバイス検出
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        inputSystem.isTouch = true;
+        console.log("タッチデバイス検出");
+    }
+}
+
+// スケールファクター計算
+function calculateScaleFactor() {
+    const scaleX = windowWidth / gameConfig.canvas.width;
+    const scaleY = windowHeight / gameConfig.canvas.height;
+    return Math.min(scaleX, scaleY, 1.0);
+}
+
+// キャンバススケール更新
+function updateCanvasScale() {
+    gameConfig.canvas.scaleFactor = calculateScaleFactor();
+    
+    // キャンバスサイズ調整
+    let newWidth = gameConfig.canvas.width * gameConfig.canvas.scaleFactor;
+    let newHeight = gameConfig.canvas.height * gameConfig.canvas.scaleFactor;
+    
+    if (canvas) {
+        resizeCanvas(newWidth, newHeight);
+    }
+    
+    console.log("キャンバススケール更新:", gameConfig.canvas.scaleFactor);
+}
+
+// ウィンドウリサイズ処理
+function windowResized() {
+    updateCanvasScale();
+}
+
+// デバイス向き変更処理
+function deviceTurned() {
+    setTimeout(() => {
+        updateCanvasScale();
+    }, 100); // 少し遅延させて正確なサイズを取得
+}
 
 // =============================================================================
 // ゲームオブジェクトクラス
@@ -1047,17 +1220,18 @@ class Paddle {
         this.color = color(100, 200, 255);
     }
     
-    // パドル更新
+    // パドル更新（入力システム対応）
     update() {
-        // マウス位置に追従（制限付き）
-        let targetX = mouseX;
-        targetX = constrain(targetX, 10 + this.width/2, width - 10 - this.width/2);
+        // 統一入力システムから位置取得
+        let targetX = inputSystem.currentInputX;
         
         // 速度制限適用
         let speed = this.baseSpeed;
         if (this.isSlowed) speed *= 0.5;
         
-        this.position.x = lerp(this.position.x, targetX, 0.15 * speed);
+        // 入力デバイスに応じた応答性調整
+        let responsiveness = inputSystem.isTouch ? 0.25 : 0.15;
+        this.position.x = lerp(this.position.x, targetX, responsiveness * speed);
         
         // 効果時間管理
         if (this.isExpanded) {
