@@ -67,8 +67,12 @@ let totalPauseTime = 0;
 // ゲームオブジェクト
 let ball;
 let paddle;
-let blocks = [];
+let blocks = [];  
 let items = [];
+
+// ビジュアルエフェクトシステム（フェーズ7）
+let particles = [];
+let maxParticles = 50;
 
 // スコアシステム
 let highScore = 0;
@@ -108,13 +112,17 @@ const gameStateManager = {
         console.log(`状態遷移: ${fromState} → ${toState} (${millis()}ms)`);
     },
     
-    // 状態変更
+    // 状態変更（視覚効果追加 - フェーズ7）
     changeState(newState) {
         if (currentState !== newState) {
             this.logTransition(currentState, newState);
             this.previousState = currentState;
             currentState = newState;
             this.transitionTimestamp = millis();
+            
+            // 状態遷移エフェクト生成
+            createStateTransitionEffect(newState);
+            
             this.onStateEnter(newState);
         }
     },
@@ -387,6 +395,9 @@ function updateGame() {
     // UIシステム更新
     updateUISystem();
     
+    // パーティクルシステム更新（フェーズ7）
+    updateParticles();
+    
     // ボール更新
     ball.update();
     
@@ -445,7 +456,7 @@ function checkGameConditions() {
     checkGameOverCondition();
 }
 
-// ゲームオブジェクト描画
+// ゲームオブジェクト描画（エフェクト追加 - フェーズ7）
 function drawGameObjects() {
     // ブロック描画
     for (let block of blocks) {
@@ -464,6 +475,9 @@ function drawGameObjects() {
     
     // ボール描画
     if (ball) ball.draw();
+    
+    // パーティクル描画（最前面）
+    drawParticles();
 }
 
 // 衝突判定メイン関数
@@ -1497,7 +1511,7 @@ function isMouseOverPauseButton() {
            checkY >= btn.y && checkY <= btn.y + btn.height;
 }
 
-// UI更新処理
+// UI更新処理（視覚効果追加 - フェーズ7）
 function updateUISystem() {
     // フェード効果の更新
     if (currentState === GAME_STATE.PAUSED) {
@@ -1510,6 +1524,86 @@ function updateUISystem() {
     uiSystem.transitionProgress += 0.02;
     if (uiSystem.transitionProgress > TWO_PI) {
         uiSystem.transitionProgress = 0;
+    }
+    
+    // UI エフェクト生成
+    generateUIEffects();
+}
+
+// UI視覚効果生成
+function generateUIEffects() {
+    // ライフが少ない時の警告エフェクト
+    if (currentState === GAME_STATE.PLAYING && gameConfig.player.lives === 1) {
+        if (frameCount % 30 === 0) {
+            createParticle(
+                width - 50 + random(-10, 10),
+                35 + random(-5, 5),
+                random(-1, 1),
+                random(-0.5, 0.5),
+                [255, 100, 100],
+                40,
+                4,
+                'sparkle'
+            );
+        }
+    }
+    
+    // スコア更新時のエフェクト
+    if (currentState === GAME_STATE.PLAYING && frameCount % 60 === 0 && gameConfig.player.score > 0) {
+        if (random(100) < 20) { // 20%の確率
+            createParticle(
+                100 + random(-20, 20),
+                45 + random(-5, 5),
+                random(-0.5, 0.5),
+                random(-1, 0),
+                [255, 255, 150],
+                25,
+                3,
+                'sparkle'
+            );
+        }
+    }
+}
+
+// 状態遷移時のアニメーション
+function createStateTransitionEffect(newState) {
+    let centerX = width / 2;
+    let centerY = height / 2;
+    
+    switch(newState) {
+        case GAME_STATE.LEVEL_CLEAR:
+            // レベルクリア時の花火エフェクト
+            for (let i = 0; i < 20; i++) {
+                let angle = random(TWO_PI);
+                let speed = random(3, 8);
+                
+                createParticle(
+                    centerX, centerY,
+                    cos(angle) * speed,
+                    sin(angle) * speed,
+                    [random(200, 255), random(200, 255), random(100, 255)],
+                    random(40, 60),
+                    random(4, 8),
+                    'explosion'
+                );
+            }
+            break;
+            
+        case GAME_STATE.GAME_OVER:
+            // ゲームオーバー時の落下エフェクト
+            for (let i = 0; i < 15; i++) {
+                createParticle(
+                    random(width),
+                    0,
+                    random(-1, 1),
+                    random(1, 3),
+                    [100, 100, 150],
+                    random(60, 80),
+                    random(3, 6),
+                    'normal'
+                );
+            }
+            break;
     }
 }
 
@@ -1544,28 +1638,75 @@ class Ball {
         this.checkWallCollision();
     }
     
-    // ボール描画
+    // ボール描画（改良版 - フェーズ7）
     draw() {
-        // 残像描画
+        // 改良された残像描画
+        this.drawTrail();
+        
+        // メインボール描画
+        this.drawMainBall();
+        
+        // 動的軌跡パーティクル生成
+        if (frameCount % 3 === 0) {
+            createParticle(
+                this.position.x + random(-2, 2),
+                this.position.y + random(-2, 2),
+                random(-0.5, 0.5),
+                random(-0.5, 0.5),
+                [255, 255, 150],
+                15,
+                3,
+                'trail'
+            );
+        }
+    }
+    
+    // 残像描画
+    drawTrail() {
         for (let i = 0; i < this.trail.length; i++) {
-            let alpha = map(i, 0, this.trail.length - 1, 30, 150);
-            let size = map(i, 0, this.trail.length - 1, this.radius * 0.3, this.radius * 0.8);
+            let progress = i / (this.trail.length - 1);
+            let alpha = map(progress, 0, 1, 20, 180);
+            let size = map(progress, 0, 1, this.radius * 0.2, this.radius * 0.9);
             
-            fill(255, 255, 100, alpha);
+            // グラデーション効果
+            let r = 255;
+            let g = 255 - (100 * (1 - progress));
+            let b = 100 + (100 * progress);
+            
+            fill(r, g, b, alpha);
             noStroke();
             ellipse(this.trail[i].x, this.trail[i].y, size * 2);
         }
+    }
+    
+    // メインボール描画
+    drawMainBall() {
+        push();
+        translate(this.position.x, this.position.y);
         
-        // メインボール描画
+        // 外側のグロー効果
+        for (let i = 0; i < 3; i++) {
+            fill(255, 255, 100, 30 - i * 10);
+            noStroke();
+            ellipse(0, 0, (this.radius + i * 2) * 2);
+        }
+        
+        // メインボール
         fill(this.color);
         stroke(255, 255, 255, 200);
         strokeWeight(2);
-        ellipse(this.position.x, this.position.y, this.radius * 2);
+        ellipse(0, 0, this.radius * 2);
         
-        // ボール内部のハイライト
-        fill(255, 255, 255, 150);
+        // 内部ハイライト
+        fill(255, 255, 255, 180);
         noStroke();
-        ellipse(this.position.x - 2, this.position.y - 2, this.radius * 0.8);
+        ellipse(-2, -2, this.radius * 0.8);
+        
+        // 中心の輝き
+        fill(255, 255, 255, 100);
+        ellipse(0, 0, this.radius * 0.4);
+        
+        pop();
     }
     
     // 壁衝突判定と反射処理
@@ -1760,10 +1901,10 @@ class Block {
         
         if (this.destroyAnimation > 0) {
             // 破壊アニメーション
-            let scale = map(this.destroyAnimation, 30, 0, 1, 0);
+            let scaleValue = map(this.destroyAnimation, 30, 0, 1, 0);
             let alpha = map(this.destroyAnimation, 30, 0, 255, 0);
             
-            scale(scale);
+            scale(scaleValue);
             tint(255, alpha);
             this.destroyAnimation--;
         }
@@ -1821,11 +1962,16 @@ class Block {
         }
     }
     
-    // ブロック破壊
+    // ブロック破壊（エフェクト追加 - フェーズ7）
     destroy() {
         if (!this.isDestroyed) {
             this.isDestroyed = true;
             this.destroyAnimation = 30; // 30フレームのアニメーション
+            
+            // 爆発エフェクト生成
+            let centerX = this.position.x + this.width / 2;
+            let centerY = this.position.y + this.height / 2;
+            createBlockExplosion(centerX, centerY, this.color);
             
             // スコア加算（改善版）
             let blockType = this.isSpecial ? 'special' : 'normal';
@@ -1898,53 +2044,135 @@ class Item {
         }
     }
     
-    // アイテム描画
+    // アイテム描画（改良版 - フェーズ7）
     draw() {
         if (this.collected) return;
         
         push();
         translate(this.position.x, this.position.y);
         
+        // 浮遊アニメーション
+        let floatOffset = sin(this.animationFrame * 0.1) * 2;
+        translate(0, floatOffset);
+        
         // 回転アニメーション
         rotate(this.animationFrame * 0.05);
         
-        // アイテムの種類に応じた描画
-        switch(this.type) {
-            case 'LIFE_UP':
-                fill(255, 100, 100);
-                stroke(255);
-                strokeWeight(2);
-                drawHeart(0, 0, this.size/2);
-                break;
-            case 'PADDLE_EXPAND':
-                fill(100, 255, 100);
-                stroke(255);
-                strokeWeight(2);
-                ellipse(0, 0, this.size);
-                fill(50, 200, 50);
-                ellipse(0, 0, this.size * 0.6);
-                break;
-            case 'BALL_MULTIPLY':
-                fill(255, 255, 100);
-                stroke(255);
-                strokeWeight(2);
-                ellipse(0, 0, this.size);
-                ellipse(-4, 0, this.size * 0.6);
-                ellipse(4, 0, this.size * 0.6);
-                break;
-            case 'SLOW_PENALTY':
-                fill(255, 50, 50);
-                stroke(200, 0, 0);
-                strokeWeight(2);
-                rect(-this.size/2, -this.size/2, this.size, this.size, 2);
-                fill(200, 0, 0);
-                ellipse(-2, -2, 3);
-                ellipse(2, -2, 3);
-                rect(-4, 2, 8, 2);
-                break;
-        }
+        // 外側のオーラ効果
+        this.drawAura();
+        
+        // メインアイテム描画
+        this.drawMainItem();
         
         pop();
+        
+        // パーティクル生成
+        if (frameCount % 8 === 0) {
+            this.generateParticles();
+        }
+    }
+    
+    // オーラ効果描画
+    drawAura() {
+        let auraColor = this.getAuraColor();
+        
+        for (let i = 0; i < 3; i++) {
+            let alpha = 30 - i * 10;
+            let size = this.size + i * 4;
+            
+            fill(auraColor[0], auraColor[1], auraColor[2], alpha);
+            noStroke();
+            ellipse(0, 0, size);
+        }
+    }
+    
+    // メインアイテム描画
+    drawMainItem() {
+        switch(this.type) {
+            case 'LIFE_UP':
+                fill(255, 120, 120);
+                stroke(255, 200, 200);
+                strokeWeight(2);
+                drawHeart(0, 0, this.size/2);
+                
+                // ハートの輝き
+                fill(255, 255, 255, 100);
+                noStroke();
+                drawHeart(-1, -1, this.size/3);
+                break;
+                
+            case 'PADDLE_EXPAND':
+                fill(120, 255, 120);
+                stroke(200, 255, 200);
+                strokeWeight(2);
+                ellipse(0, 0, this.size);
+                
+                fill(80, 220, 80);
+                ellipse(0, 0, this.size * 0.7);
+                
+                // 中心の輝き
+                fill(255, 255, 255, 120);
+                noStroke();
+                ellipse(0, 0, this.size * 0.3);
+                break;
+                
+            case 'BALL_MULTIPLY':
+                fill(255, 255, 120);
+                stroke(255, 255, 200);
+                strokeWeight(2);
+                ellipse(0, 0, this.size);
+                
+                fill(220, 220, 100);
+                ellipse(-3, 0, this.size * 0.6);
+                ellipse(3, 0, this.size * 0.6);
+                
+                // 輝きエフェクト
+                fill(255, 255, 255, 100);
+                noStroke();
+                ellipse(0, 0, this.size * 0.4);
+                break;
+                
+            case 'SLOW_PENALTY':
+                fill(255, 70, 70);
+                stroke(220, 50, 50);
+                strokeWeight(2);
+                rect(-this.size/2, -this.size/2, this.size, this.size, 3);
+                
+                // 危険マーク
+                fill(220, 0, 0);
+                noStroke();
+                ellipse(-2, -2, 4);
+                ellipse(2, -2, 4);
+                rect(-4, 2, 8, 3);
+                break;
+        }
+    }
+    
+    // オーラ色取得
+    getAuraColor() {
+        switch(this.type) {
+            case 'LIFE_UP': return [255, 100, 100];
+            case 'PADDLE_EXPAND': return [100, 255, 100];
+            case 'BALL_MULTIPLY': return [255, 255, 100];
+            case 'SLOW_PENALTY': return [255, 50, 50];
+            default: return [255, 255, 255];
+        }
+    }
+    
+    // アイテムパーティクル生成
+    generateParticles() {
+        let auraColor = this.getAuraColor();
+        
+        createParticle(
+            this.position.x + random(-8, 8),
+            this.position.y + random(-8, 8),
+            random(-0.5, 0.5),
+            random(-1, 0),
+            auraColor,
+            random(20, 30),
+            random(2, 4),
+            'sparkle'
+        );
     }
     
     // パドルとの衝突判定
@@ -1965,8 +2193,11 @@ class Item {
         return false;
     }
     
-    // アイテム効果適用
+    // アイテム効果適用（エフェクト追加 - フェーズ7）
     applyEffect(paddle) {
+        // エフェクト生成
+        createItemEffect(this.position.x, this.position.y, this.type);
+        
         switch(this.type) {
             case 'LIFE_UP':
                 if (gameConfig.player.lives < gameConfig.player.maxLives) {
@@ -2013,5 +2244,215 @@ function generateBlocks() {
             
             blocks.push(new Block(x, y, blockColor, isSpecial, itemType));
         }
+    }
+}
+
+// =============================================================================
+// パーティクルシステム実装（フェーズ7）
+// =============================================================================
+
+// Particleクラス - パーティクル管理
+class Particle {
+    constructor(x, y, vx, vy, color, life = 60, size = 3) {
+        this.position = { x, y };
+        this.velocity = { vx: vx || random(-2, 2), vy: vy || random(-2, 2) };
+        this.color = color || [255, 255, 255];
+        this.life = life;
+        this.maxLife = life;
+        this.size = size;
+        this.gravity = 0.1;
+        this.friction = 0.98;
+        this.type = 'normal';
+    }
+    
+    // パーティクル更新
+    update() {
+        // 位置更新
+        this.position.x += this.velocity.vx;
+        this.position.y += this.velocity.vy;
+        
+        // 物理演算
+        this.velocity.vy += this.gravity;
+        this.velocity.vx *= this.friction;
+        this.velocity.vy *= this.friction;
+        
+        // ライフ減少
+        this.life--;
+        
+        return this.life > 0;
+    }
+    
+    // パーティクル描画
+    draw() {
+        let alpha = map(this.life, 0, this.maxLife, 0, 255);
+        let currentSize = map(this.life, 0, this.maxLife, 0, this.size);
+        
+        push();
+        translate(this.position.x, this.position.y);
+        
+        // パーティクルのタイプに応じた描画
+        switch(this.type) {
+            case 'explosion':
+                this.drawExplosion(alpha, currentSize);
+                break;
+            case 'sparkle':
+                this.drawSparkle(alpha, currentSize);
+                break;
+            case 'trail':
+                this.drawTrail(alpha, currentSize);
+                break;
+            default:
+                this.drawNormal(alpha, currentSize);
+        }
+        
+        pop();
+    }
+    
+    // 通常パーティクル描画
+    drawNormal(alpha, size) {
+        fill(this.color[0], this.color[1], this.color[2], alpha);
+        noStroke();
+        ellipse(0, 0, size);
+    }
+    
+    // 爆発パーティクル描画
+    drawExplosion(alpha, size) {
+        fill(this.color[0], this.color[1], this.color[2], alpha);
+        noStroke();
+        
+        // 複数の円で爆発効果
+        for (let i = 0; i < 3; i++) {
+            let offset = i * 2;
+            ellipse(random(-offset, offset), random(-offset, offset), size - i);
+        }
+    }
+    
+    // きらきらパーティクル描画
+    drawSparkle(alpha, size) {
+        stroke(this.color[0], this.color[1], this.color[2], alpha);
+        strokeWeight(2);
+        
+        // 十字の線
+        line(-size/2, 0, size/2, 0);
+        line(0, -size/2, 0, size/2);
+        
+        // 対角線
+        line(-size/3, -size/3, size/3, size/3);
+        line(-size/3, size/3, size/3, -size/3);
+    }
+    
+    // 軌跡パーティクル描画
+    drawTrail(alpha, size) {
+        fill(this.color[0], this.color[1], this.color[2], alpha * 0.7);
+        noStroke();
+        ellipse(0, 0, size);
+        
+        // 内側のハイライト
+        fill(255, 255, 255, alpha * 0.3);
+        ellipse(-1, -1, size * 0.6);
+    }
+}
+
+// パーティクル生成関数
+function createParticle(x, y, vx, vy, color, life, size, type = 'normal') {
+    if (particles.length >= maxParticles) {
+        particles.shift(); // 古いパーティクルを削除
+    }
+    
+    let particle = new Particle(x, y, vx, vy, color, life, size);
+    particle.type = type;
+    particles.push(particle);
+}
+
+// ブロック破壊時の爆発エフェクト
+function createBlockExplosion(x, y, blockColor) {
+    let r = red(blockColor);
+    let g = green(blockColor);
+    let b = blue(blockColor);
+    
+    // メイン爆発パーティクル
+    for (let i = 0; i < 8; i++) {
+        let angle = (i * TWO_PI) / 8;
+        let speed = random(2, 5);
+        let vx = cos(angle) * speed;
+        let vy = sin(angle) * speed;
+        
+        createParticle(
+            x + random(-10, 10), 
+            y + random(-5, 5),
+            vx, vy,
+            [r, g, b],
+            random(30, 50),
+            random(4, 8),
+            'explosion'
+        );
+    }
+    
+    // きらきらエフェクト
+    for (let i = 0; i < 5; i++) {
+        createParticle(
+            x + random(-15, 15),
+            y + random(-10, 10),
+            random(-1, 1),
+            random(-2, 0),
+            [255, 255, 200],
+            random(20, 35),
+            random(6, 10),
+            'sparkle'
+        );
+    }
+}
+
+// アイテム取得時のエフェクト
+function createItemEffect(x, y, itemType) {
+    let effectColor;
+    
+    switch(itemType) {
+        case 'LIFE_UP':
+            effectColor = [255, 100, 100];
+            break;
+        case 'PADDLE_EXPAND':
+            effectColor = [100, 255, 100];
+            break;
+        case 'BALL_MULTIPLY':
+            effectColor = [255, 255, 100];
+            break;
+        case 'SLOW_PENALTY':
+            effectColor = [200, 50, 50];
+            break;
+        default:
+            effectColor = [255, 255, 255];
+    }
+    
+    // 放射状パーティクル
+    for (let i = 0; i < 12; i++) {
+        let angle = (i * TWO_PI) / 12;
+        let speed = random(1, 3);
+        
+        createParticle(
+            x, y,
+            cos(angle) * speed,
+            sin(angle) * speed,
+            effectColor,
+            random(25, 40),
+            random(3, 6),
+            'sparkle'
+        );
+    }
+}
+
+// パーティクル更新処理
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        if (!particles[i].update()) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+// パーティクル描画処理
+function drawParticles() {
+    for (let particle of particles) {
+        particle.draw();
     }
 }
