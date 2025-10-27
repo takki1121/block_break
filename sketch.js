@@ -1615,7 +1615,7 @@ function createStateTransitionEffect(newState) {
 class Ball {
     constructor(x, y, vx, vy) {
         this.position = { x: x || width/2, y: y || height - 100 };
-        this.velocity = { vx: vx || 3, vy: vy || -3 };
+        this.velocity = { vx: vx || 5, vy: vy || -5 };
         this.radius = 8;
         this.trail = []; // 残像効果用
         this.maxTrailLength = 8;
@@ -1748,8 +1748,8 @@ class Ball {
     reset() {
         this.position.x = width/2;
         this.position.y = height - 100;
-        this.velocity.vx = random(-3, 3);
-        this.velocity.vy = -3;
+        this.velocity.vx = random(-5, 5);
+        this.velocity.vy = -5;
         this.trail = [];
     }
 }
