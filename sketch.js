@@ -83,6 +83,14 @@ let inputSystem = {
     lastTouchTime: 0
 };
 
+// UI システム
+let uiSystem = {
+    pauseButton: { x: 0, y: 0, width: 60, height: 30, visible: true },
+    showPauseOverlay: false,
+    fadeOpacity: 0,
+    transitionProgress: 0
+};
+
 // ゲーム状態管理システム
 const gameStateManager = {
     previousState: null,
@@ -157,6 +165,9 @@ function setup() {
     // 入力システム初期化
     initializeInputSystem();
     
+    // UIシステム初期化
+    initializeUISystem();
+    
     // レスポンシブ対応初期化
     updateCanvasScale();
     
@@ -195,49 +206,140 @@ function draw() {
     }
 }
 
-// オープニング画面描画
+// オープニング画面描画（改良版 - フェーズ6）
 function drawOpening() {
-    // グラデーション背景
-    drawGradientBackground([30, 30, 60], [60, 30, 90]);
+    // 動的グラデーション背景
+    drawAnimatedBackground();
     
-    // タイトルロゴ効果
-    drawAnimatedTitle();
+    // メインタイトル表示
+    drawMainTitle();
     
     // ハイスコア表示
-    fill(255, 200, 100);
-    textAlign(CENTER, CENTER);
-    textSize(20);
-    text("ハイスコア: " + highScore.toString().padStart(6, '0'), width/2, height/3 + 50);
+    drawHighScoreDisplay();
     
-    // 開始指示（点滅効果・デバイス対応）
-    if (Math.floor(millis() / 500) % 2 === 0) {
-        fill(255, 255, 100);
+    // ゲーム開始メッセージ
+    drawStartMessage();
+    
+    // 操作説明パネル
+    drawControlsPanel();
+    
+    // フッター情報
+    drawFooterInfo();
+}
+
+// 動的背景
+function drawAnimatedBackground() {
+    let time = millis() * 0.001;
+    let color1 = [30 + 10 * sin(time), 30 + 10 * cos(time * 0.7), 60 + 15 * sin(time * 0.5)];
+    let color2 = [60 + 15 * cos(time * 0.3), 30 + 10 * sin(time * 0.9), 90 + 20 * cos(time * 0.4)];
+    drawGradientBackground(color1, color2);
+}
+
+// メインタイトル
+function drawMainTitle() {
+    push();
+    translate(width/2, height/3);
+    
+    let time = millis() * 0.001;
+    let titleScale = 1 + 0.05 * sin(time * 2);
+    scale(titleScale);
+    
+    // タイトル影効果
+    fill(0, 0, 0, 100);
+    textAlign(CENTER, CENTER);
+    textSize(52);
+    text("BLOCK BREAKER", 4, 4);
+    
+    // メインタイトル
+    fill(255, 200 + 50 * sin(time * 3), 100);
+    text("BLOCK BREAKER", 0, 0);
+    
+    // サブタイトル
+    fill(200, 200, 255, 200 + 50 * sin(time * 1.5));
+    textSize(16);
+    text("- Classic Arcade Game -", 0, 40);
+    
+    pop();
+}
+
+// ハイスコア表示
+function drawHighScoreDisplay() {
+    // ハイスコアパネル
+    let panelY = height/3 + 70;
+    fill(0, 0, 0, 100);
+    rect(width/2 - 120, panelY - 10, 240, 40, 10);
+    
+    fill(255, 220, 100);
+    textAlign(CENTER, CENTER);
+    textSize(18);
+    text("HIGH SCORE", width/2, panelY);
+    
+    fill(255, 255, 150);
+    textSize(24);
+    textFont('monospace');
+    text(highScore.toString().padStart(8, '0'), width/2, panelY + 20);
+    textFont('Delius');
+}
+
+// ゲーム開始メッセージ
+function drawStartMessage() {
+    if (Math.floor(millis() / 400) % 2 === 0) {
+        let messageY = height/2 + 50;
+        
+        // メッセージ背景
+        fill(255, 255, 100, 100);
+        rect(width/2 - 130, messageY - 15, 260, 35, 15);
+        
+        fill(255, 255, 150);
         textAlign(CENTER, CENTER);
-        textSize(24);
+        textSize(22);
+        
         if (inputSystem.isTouch) {
-            text("タップしてゲーム開始", width/2, height/2 + 50);
+            text("📱 TAP TO START", width/2, messageY);
         } else {
-            text("クリックしてゲーム開始", width/2, height/2 + 50);
+            text("🖱️ CLICK TO START", width/2, messageY);
         }
     }
+}
+
+// 操作説明パネル
+function drawControlsPanel() {
+    let panelY = height/2 + 120;
+    let panelHeight = inputSystem.isTouch ? 80 : 100;
     
-    // 操作説明（デバイス対応）
+    // パネル背景
+    fill(40, 40, 80, 150);
+    stroke(100, 150, 255, 100);
+    strokeWeight(1);
+    rect(width/2 - 150, panelY - 10, 300, panelHeight, 10);
+    noStroke();
+    
     fill(200, 200, 255);
-    textSize(16);
-    if (inputSystem.isTouch) {
-        text("タッチ移動: パドル操作", width/2, height/2 + 100);
-        text("タップ: ゲーム操作", width/2, height/2 + 120);
-    } else {
-        text("マウス移動: パドル操作", width/2, height/2 + 100);
-        text("スペース: ポーズ", width/2, height/2 + 120);
-        text("R: リスタート / ESC: メニューに戻る", width/2, height/2 + 140);
-    }
+    textAlign(CENTER, CENTER);
+    textSize(14);
+    text("CONTROLS", width/2, panelY + 5);
     
-    // バージョン情報
-    fill(150);
-    textAlign(RIGHT, BOTTOM);
     textSize(12);
-    text("v1.0 - Block Breaker Game", width - 10, height - 10);
+    if (inputSystem.isTouch) {
+        text("🖐️ Touch & Drag: Move Paddle", width/2, panelY + 25);
+        text("👆 Tap: Game Actions", width/2, panelY + 40);
+    } else {
+        text("🖱️ Mouse: Move Paddle", width/2, panelY + 25);
+        text("⌨️ SPACE: Pause", width/2, panelY + 40);
+        text("⌨️ R: Restart / ESC: Menu", width/2, panelY + 55);
+    }
+}
+
+// フッター情報
+function drawFooterInfo() {
+    fill(150, 150, 200);
+    textAlign(CENTER, BOTTOM);
+    textSize(12);
+    text("Block Breaker v1.0 | Made with p5.js", width/2, height - 30);
+    
+    textAlign(RIGHT, BOTTOM);
+    textSize(10);
+    text("🎮 Ready Player One", width - 10, height - 10);
 }
 
 // アニメーションタイトル描画
@@ -281,6 +383,9 @@ function updateGame() {
     
     // 入力システム更新
     updateInputSystem();
+    
+    // UIシステム更新
+    updateUISystem();
     
     // ボール更新
     ball.update();
@@ -553,59 +658,203 @@ function checkLevelClear() {
     checkLevelClearCondition();
 }
 
-// ポーズ画面描画
+// ポーズ画面描画（改良版）
 function drawPaused() {
     // ゲーム画面をそのまま表示
     drawGame();
     
-    // ポーズオーバーレイ
-    fill(0, 0, 0, 150);
+    // ポーズオーバーレイ表示
+    drawPauseOverlay();
+}
+
+// ポーズオーバーレイ描画
+function drawPauseOverlay() {
+    // 背景ブラー効果
+    fill(0, 0, 0, 180);
     rect(0, 0, width, height);
     
+    // ポーズメニューパネル
+    let panelWidth = 300;
+    let panelHeight = 200;
+    let panelX = (width - panelWidth) / 2;
+    let panelY = (height - panelHeight) / 2;
+    
+    // パネル背景
+    fill(40, 40, 60, 220);
+    stroke(100, 150, 255);
+    strokeWeight(2);
+    rect(panelX, panelY, panelWidth, panelHeight, 15);
+    noStroke();
+    
+    // パネル内容
     fill(255);
     textAlign(CENTER, CENTER);
     textSize(36);
-    text("PAUSED", width/2, height/2);
-    textSize(18);
-    text("スペースキーで再開", width/2, height/2 + 50);
+    text("PAUSED", width/2, panelY + 50);
+    
+    // 操作説明
+    textSize(16);
+    fill(200, 200, 255);
+    if (inputSystem.isTouch) {
+        text("タップで再開", width/2, panelY + 100);
+        text("画面タップでメニュー操作", width/2, panelY + 120);
+    } else {
+        text("スペースキーで再開", width/2, panelY + 100);
+        text("ESC: メニューに戻る", width/2, panelY + 120);
+        text("R: ゲームリスタート", width/2, panelY + 140);
+    }
+    
+    // 点滅する再開指示
+    if (Math.floor(millis() / 300) % 2 === 0) {
+        fill(255, 255, 100);
+        textSize(18);
+        text("▶ RESUME", width/2, panelY + 165);
+    }
 }
 
-// ゲームオーバー画面描画
+// ゲームオーバー画面描画（改良版 - フェーズ6）
 function drawGameOver() {
-    background(80, 20, 20);
+    // 動的背景
+    drawGameOverBackground();
     
-    fill(255);
+    // メインタイトル
+    drawGameOverTitle();
+    
+    // スコア情報パネル
+    drawScoreInfoPanel();
+    
+    // 統計情報
+    drawGameStats();
+    
+    // リスタートメッセージ
+    drawRestartMessage();
+}
+
+// ゲームオーバー背景
+function drawGameOverBackground() {
+    let time = millis() * 0.0005;
+    let color1 = [80 + 20 * sin(time), 20, 20];
+    let color2 = [40, 20 + 10 * cos(time), 40];
+    drawGradientBackground(color1, color2);
+    
+    // パーティクル風効果
+    for (let i = 0; i < 20; i++) {
+        let x = (millis() * 0.05 + i * 40) % (width + 50);
+        let y = 50 + i * 25;
+        fill(255, 100, 100, 30);
+        ellipse(x, y, 3, 3);
+    }
+}
+
+// ゲームオーバータイトル
+function drawGameOverTitle() {
+    push();
+    translate(width/2, height/3);
+    
+    let pulseScale = 1 + 0.1 * sin(millis() * 0.003);
+    scale(pulseScale);
+    
+    // 影効果
+    fill(0, 0, 0, 150);
     textAlign(CENTER, CENTER);
     textSize(48);
-    text("GAME OVER", width/2, height/3);
+    text("GAME OVER", 3, 3);
     
-    // 最終スコア表示
-    textSize(24);
-    text("最終スコア: " + gameConfig.player.score.toString().padStart(6, '0'), width/2, height/2 - 20);
+    // メインテキスト
+    fill(255, 100, 100);
+    text("GAME OVER", 0, 0);
     
-    // ハイスコア表示
+    pop();
+}
+
+// スコア情報パネル
+function drawScoreInfoPanel() {
+    let panelY = height/2 - 40;
+    let panelWidth = 350;
+    let panelHeight = 120;
+    let panelX = (width - panelWidth) / 2;
+    
+    // パネル背景
+    fill(20, 20, 40, 200);
+    stroke(100, 100, 150);
+    strokeWeight(2);
+    rect(panelX, panelY, panelWidth, panelHeight, 15);
+    noStroke();
+    
+    // 最終スコア
+    fill(255, 255, 150);
+    textAlign(CENTER, CENTER);
+    textSize(18);
+    text("FINAL SCORE", width/2, panelY + 25);
+    
+    fill(255, 255, 100);
+    textSize(32);
+    textFont('monospace');
+    text(gameConfig.player.score.toString().padStart(8, '0'), width/2, panelY + 50);
+    textFont('Delius');
+    
+    // ハイスコア比較
     if (gameConfig.player.score >= highScore) {
         fill(255, 255, 100);
         textSize(20);
-        text("★ 新ハイスコア! ★", width/2, height/2 + 10);
+        text("🏆 NEW HIGH SCORE! 🏆", width/2, panelY + 85);
+        
+        // きらきら効果
+        for (let i = 0; i < 5; i++) {
+            let sparkleX = width/2 + random(-100, 100);
+            let sparkleY = panelY + 85 + random(-20, 20);
+            fill(255, 255, 100, random(100, 255));
+            ellipse(sparkleX, sparkleY, random(2, 6));
+        }
     } else {
         fill(200, 200, 200);
         textSize(16);
-        text("ハイスコア: " + highScore.toString().padStart(6, '0'), width/2, height/2 + 10);
+        text("High Score: " + highScore.toString().padStart(8, '0'), width/2, panelY + 85);
     }
+}
+
+// ゲーム統計
+function drawGameStats() {
+    let statsY = height/2 + 100;
     
-    // 到達レベル表示
     fill(150, 255, 150);
-    textSize(18);
-    text("到達レベル: " + gameConfig.player.level, width/2, height/2 + 40);
+    textAlign(CENTER, CENTER);
+    textSize(16);
+    text("📊 GAME STATISTICS", width/2, statsY);
     
-    // リスタート指示（デバイス対応）
-    fill(255);
-    textSize(20);
-    if (inputSystem.isTouch) {
-        text("タップでリスタート", width/2, height/2 + 80);
-    } else {
-        text("クリックでリスタート", width/2, height/2 + 80);
+    textSize(14);
+    fill(200, 255, 200);
+    text("Level Reached: " + gameConfig.player.level, width/2, statsY + 25);
+    
+    // プレイ時間計算
+    let playTime = ((millis() - gameStartTime - totalPauseTime) / 1000).toFixed(1);
+    text("Play Time: " + playTime + "s", width/2, statsY + 45);
+    
+    // スコア効率
+    if (playTime > 0) {
+        let efficiency = (gameConfig.player.score / parseFloat(playTime)).toFixed(1);
+        text("Score/sec: " + efficiency, width/2, statsY + 65);
+    }
+}
+
+// リスタートメッセージ
+function drawRestartMessage() {
+    if (Math.floor(millis() / 600) % 2 === 0) {
+        let messageY = height - 80;
+        
+        // メッセージ背景
+        fill(255, 255, 255, 50);
+        rect(width/2 - 100, messageY - 15, 200, 35, 15);
+        
+        fill(255, 255, 150);
+        textAlign(CENTER, CENTER);
+        textSize(18);
+        
+        if (inputSystem.isTouch) {
+            text("📱 TAP TO RESTART", width/2, messageY);
+        } else {
+            text("🖱️ CLICK TO RESTART", width/2, messageY);
+        }
     }
 }
 
@@ -645,34 +894,133 @@ function drawLevelClear() {
     }
 }
 
-// UI描画（スコア、ライフなど）
+// HUD描画システム（改良版 - フェーズ6）
 function drawUI() {
-    // UIパネル背景
-    fill(0, 0, 0, 100);
-    rect(0, 0, width, 80);
+    // HUD背景パネル
+    drawHUDBackground();
     
-    // スコア表示（左上）
-    fill(255, 255, 100);
+    // 基本HUD要素
+    drawScoreDisplay();
+    drawLivesDisplay(); 
+    drawLevelDisplay();
+    drawPauseButton();
+    
+    // 補助情報
+    drawLevelProgress();
+    drawScoreMultiplier();
+}
+
+// HUD背景描画
+function drawHUDBackground() {
+    // グラデーション背景
+    for (let i = 0; i < 80; i++) {
+        let alpha = map(i, 0, 80, 120, 0);
+        stroke(0, 0, 0, alpha);
+        line(0, i, width, i);
+    }
+    noStroke();
+    
+    // 区切り線
+    stroke(100, 150, 255, 150);
+    strokeWeight(2);
+    line(0, 78, width, 78);
+    noStroke();
+}
+
+// スコア表示（左上）
+function drawScoreDisplay() {
+    // スコアラベル
+    fill(255, 255, 150);
     textAlign(LEFT, TOP);
-    textSize(18);
-    text("スコア", 15, 15);
+    textSize(14);
+    text("SCORE", 15, 12);
+    
+    // スコア値
+    fill(255, 255, 100);
     textSize(24);
-    text(gameConfig.player.score.toString().padStart(6, '0'), 15, 35);
+    textFont('monospace'); // 固定幅フォント
+    text(gameConfig.player.score.toString().padStart(8, '0'), 15, 28);
+    textFont('Delius'); // 元のフォントに戻す
     
-    // ライフ表示（右上）
-    drawLives();
+    // スコア増加アニメーション用の背景
+    if (gameConfig.player.score > 0) {
+        let pulseAlpha = 30 + 20 * sin(millis() * 0.01);
+        fill(255, 255, 0, pulseAlpha);
+        noStroke();
+        rect(12, 25, 150, 30, 5);
+    }
+}
+
+// ライフ表示（右上）
+function drawLivesDisplay() {
+    // ライフラベル
+    fill(255, 150, 150);
+    textAlign(RIGHT, TOP);
+    textSize(14);
+    text("LIVES", width - 15, 12);
     
-    // レベル表示（右上、ライフの下）
-    fill(100, 255, 100);
+    // ハート描画
+    let heartSize = 18;
+    let heartSpacing = 22;
+    let startX = width - 15 - (gameConfig.player.maxLives * heartSpacing);
+    
+    for (let i = 0; i < gameConfig.player.maxLives; i++) {
+        let x = startX + i * heartSpacing;
+        let y = 35;
+        
+        if (i < gameConfig.player.lives) {
+            // 生きているライフ（赤いハート）
+            fill(255, 80, 80);
+            // ライフ減少時の点滅効果
+            if (gameConfig.player.lives <= 1) {
+                let pulseAlpha = 150 + 100 * sin(millis() * 0.02);
+                fill(255, 80, 80, pulseAlpha);
+            }
+        } else {
+            // 失ったライフ（グレーのハート）
+            fill(100, 100, 100, 150);
+        }
+        
+        drawHeart(x, y, heartSize);
+    }
+}
+
+// レベル表示（右上、ライフの下）
+function drawLevelDisplay() {
+    fill(150, 255, 150);
     textAlign(RIGHT, TOP);
     textSize(16);
-    text("レベル " + gameConfig.player.level, width - 15, 50);
+    text("LEVEL " + gameConfig.player.level, width - 15, 58);
     
-    // プログレスバー（レベル進行度）
-    drawLevelProgress();
+    // レベル背景装飾
+    fill(100, 200, 100, 30);
+    noStroke();
+    rect(width - 120, 55, 100, 20, 10);
+}
+
+// ポーズボタン描画
+function drawPauseButton() {
+    if (!uiSystem.pauseButton.visible || currentState !== GAME_STATE.PLAYING) return;
     
-    // スコア倍率表示
-    drawScoreMultiplier();
+    let btn = uiSystem.pauseButton;
+    
+    // ボタン背景
+    fill(50, 50, 50, 180);
+    stroke(150, 150, 200);
+    strokeWeight(1);
+    rect(btn.x, btn.y, btn.width, btn.height, 5);
+    
+    // ポーズアイコン（二本の縦線）
+    fill(200, 200, 255);
+    noStroke();
+    rect(btn.x + 18, btn.y + 8, 4, 14);
+    rect(btn.x + 26, btn.y + 8, 4, 14);
+    
+    // ホバー効果
+    if (isMouseOverPauseButton()) {
+        fill(255, 255, 255, 50);
+        rect(btn.x, btn.y, btn.width, btn.height, 5);
+    }
 }
 
 // ライフ表示（ハート型）
@@ -944,6 +1292,12 @@ function updateInputPosition(rawX) {
 
 // 統一されたゲーム入力処理
 function handleGameInput() {
+    // ポーズボタンのクリック判定
+    if (currentState === GAME_STATE.PLAYING && isMouseOverPauseButton()) {
+        gameStateManager.changeState(GAME_STATE.PAUSED);
+        return;
+    }
+    
     switch(currentState) {
         case GAME_STATE.OPENING:
             // ゲーム開始
@@ -1097,13 +1451,66 @@ function updateCanvasScale() {
 // ウィンドウリサイズ処理
 function windowResized() {
     updateCanvasScale();
+    updateUIPositions(); // UI要素の位置も更新
 }
 
 // デバイス向き変更処理
 function deviceTurned() {
     setTimeout(() => {
         updateCanvasScale();
+        updateUIPositions(); // UI要素の位置も更新
     }, 100); // 少し遅延させて正確なサイズを取得
+}
+
+// =============================================================================
+// UIシステム実装（フェーズ6）
+// =============================================================================
+
+// UIシステム初期化
+function initializeUISystem() {
+    updateUIPositions();
+    uiSystem.showPauseOverlay = false;
+    uiSystem.fadeOpacity = 0;
+    uiSystem.transitionProgress = 0;
+}
+
+// UI要素位置更新
+function updateUIPositions() {
+    // ポーズボタンの位置設定
+    uiSystem.pauseButton.x = width - 70;
+    uiSystem.pauseButton.y = 10;
+    uiSystem.pauseButton.width = 55;
+    uiSystem.pauseButton.height = 25;
+}
+
+// ポーズボタンマウスオーバー判定
+function isMouseOverPauseButton() {
+    if (!uiSystem.pauseButton.visible || currentState !== GAME_STATE.PLAYING) {
+        return false;
+    }
+    
+    let btn = uiSystem.pauseButton;
+    let checkX = inputSystem.isTouch ? touches[0]?.x || 0 : mouseX;
+    let checkY = inputSystem.isTouch ? touches[0]?.y || 0 : mouseY;
+    
+    return checkX >= btn.x && checkX <= btn.x + btn.width && 
+           checkY >= btn.y && checkY <= btn.y + btn.height;
+}
+
+// UI更新処理
+function updateUISystem() {
+    // フェード効果の更新
+    if (currentState === GAME_STATE.PAUSED) {
+        uiSystem.fadeOpacity = lerp(uiSystem.fadeOpacity, 255, 0.1);
+    } else {
+        uiSystem.fadeOpacity = lerp(uiSystem.fadeOpacity, 0, 0.1);
+    }
+    
+    // 状態遷移アニメーションの更新
+    uiSystem.transitionProgress += 0.02;
+    if (uiSystem.transitionProgress > TWO_PI) {
+        uiSystem.transitionProgress = 0;
+    }
 }
 
 // =============================================================================
