@@ -124,7 +124,7 @@ function drawStartMessage() {
 
 // 操作説明パネル
 function drawControlsPanel() {
-    let panelY = 370;
+    let panelY = 420;
     let panelHeight = inputSystem.isTouch ? 80 : 100;
     
     // パネル背景
@@ -338,6 +338,7 @@ function drawGameOver() {
     // 背景
     fill(0, 0, 0, 200);
     noStroke();
+    rectMode(CORNER);
     rect(0, 0, width, height);
     
     textAlign(CENTER, CENTER);
