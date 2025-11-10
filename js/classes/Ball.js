@@ -120,17 +120,9 @@ class Ball {
             bounced = true;
         }
         
-        // 下の壁（ライフ減少）
-        if (this.position.y - this.radius >= height - 30) {
-            this.onBottomHit();
-        }
+        // 下の壁は updateGame() で処理されるので、ここでは何もしない
         
         return bounced;
-    }
-    
-    // 底に到達した時の処理
-    onBottomHit() {
-        loseLife(); // 改善されたライフ減少処理を使用
     }
     
     // ボールリセット

@@ -92,7 +92,21 @@ function updateGame() {
     if (currentState !== GAME_STATE.PLAYING) return;
     
     // オブジェクト更新
-    if (ball) ball.update();
+    // すべてのボールを更新
+    for (let i = balls.length - 1; i >= 0; i--) {
+        balls[i].update();
+        
+        // 画面下に落ちたボールを削除
+        if (balls[i].position.y > height + 50) {
+            balls.splice(i, 1);
+        }
+    }
+    
+    // ボールがすべてなくなったらライフ減少
+    if (balls.length === 0) {
+        loseLife();
+    }
+    
     if (paddle) paddle.update();
     
     // アイテム更新
@@ -173,6 +187,33 @@ function getGameStats() {
     };
 }
 
+// ボール増殖関数
+function multiplyBalls() {
+    let currentBalls = [...balls]; // 現在のボールをコピー
+    let maxBalls = 10; // 最大ボール数制限
+    
+    // 現在のボール数が制限以下の場合、各ボールを複製
+    currentBalls.forEach(originalBall => {
+        if (balls.length >= maxBalls) return;
+        
+        // 新しいボールを作成（元のボールの位置から少しずらして）
+        let newBall = new Ball(
+            originalBall.position.x + random(-20, 20),
+            originalBall.position.y + random(-10, 10),
+            originalBall.velocity.vx + random(-2, 2),
+            originalBall.velocity.vy + random(-1, 1)
+        );
+        
+        balls.push(newBall);
+        console.log("新しいボール追加:", balls.length);
+    });
+    
+    // 最大数に達した場合の警告
+    if (balls.length >= maxBalls) {
+        console.log("ボール数が最大に達しました:", maxBalls);
+    }
+}
+
 // パフォーマンス最適化チェック
 function optimizePerformance() {
     // パーティクル数制限
@@ -183,6 +224,12 @@ function optimizePerformance() {
     // アイテム数制限（稀なケース）
     if (items.length > 20) {
         items.splice(0, items.length - 20);
+    }
+    
+    // ボール数制限
+    if (balls.length > 10) {
+        balls.splice(10); // 10個以上は削除
+        console.log("ボール数を制限しました:", balls.length);
     }
     
     // 破壊済みブロックのクリーンアップ（メモリリーク防止）

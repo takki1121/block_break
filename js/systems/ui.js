@@ -205,8 +205,8 @@ function drawGameObjects() {
     // パドル描画
     if (paddle) paddle.draw();
     
-    // ボール描画
-    if (ball) ball.draw();
+    // すべてのボール描画
+    balls.forEach(ball => ball.draw());
 }
 
 // HUD描画

@@ -9,7 +9,7 @@ let pauseStartTime;
 let totalPauseTime = 0;
 
 // ゲームオブジェクト
-let ball;
+let balls = []; // ボール配列に変更
 let paddle;
 let blocks = [];  
 let items = [];
@@ -163,7 +163,7 @@ function initializeGame() {
     gameConfig.player.level = 1;
     
     // ゲームオブジェクト生成
-    ball = new Ball();
+    balls = [new Ball()]; // ボール配列に1個のボールを追加
     paddle = new Paddle();
     generateBlocks();
     
@@ -181,8 +181,8 @@ function initializeLevel() {
     // 新しいブロック配置生成
     generateBlocks();
     
-    // ボールリセット
-    ball.reset();
+    // ボールリセット（1個に戻す）
+    balls = [new Ball()];
     
     // パーティクル・アイテムクリア
     particles = [];
@@ -198,7 +198,8 @@ function loseLife() {
     if (gameConfig.player.lives <= 0) {
         gameStateManager.changeState(GAME_STATE.GAME_OVER);
     } else {
-        ball.reset();
+        // ボールを1個にリセット
+        balls = [new Ball()];
         // ライフ減少エフェクト
         createLifeLossEffect();
     }

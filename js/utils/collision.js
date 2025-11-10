@@ -3,17 +3,20 @@
 
 // 衝突判定メイン関数
 function checkCollisions() {
-    if (!ball || !paddle) return;
+    if (balls.length === 0 || !paddle) return;
     
-    // ボール vs パドル衝突判定
-    checkBallPaddleCollision();
-    
-    // ボール vs ブロック衝突判定
-    checkBallBlockCollision();
+    // すべてのボールに対して衝突判定
+    balls.forEach(ball => {
+        // ボール vs パドル衝突判定
+        checkBallPaddleCollision(ball);
+        
+        // ボール vs ブロック衝突判定
+        checkBallBlockCollision(ball);
+    });
 }
 
 // ボール vs パドル衝突判定
-function checkBallPaddleCollision() {
+function checkBallPaddleCollision(ball) {
     let paddleBounds = paddle.getBounds();
     
     if (ball.position.x + ball.radius > paddleBounds.left &&
@@ -36,7 +39,7 @@ function checkBallPaddleCollision() {
 }
 
 // ボール vs ブロック衝突判定（改善版）
-function checkBallBlockCollisionImproved() {
+function checkBallBlockCollisionImproved(ball) {
     let collisionDetected = false;
     
     for (let i = 0; i < blocks.length && !collisionDetected; i++) {
@@ -126,8 +129,8 @@ function getCollisionSide(circleX, circleY, radius, rect) {
 }
 
 // 旧関数（互換性のため）
-function checkBallBlockCollision() {
-    checkBallBlockCollisionImproved();
+function checkBallBlockCollision(ball) {
+    checkBallBlockCollisionImproved(ball);
 }
 
 // 全衝突判定チェック
