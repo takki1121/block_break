@@ -67,17 +67,48 @@ class Item {
     
     // メインアイテム描画
     drawMainItem() {
+        // 背景円を描画（画像の視認性向上）
+        let bgColor = this.getAuraColor();
+        fill(bgColor[0], bgColor[1], bgColor[2], 100);
+        noStroke();
+        ellipse(0, 0, this.size + 4);
+        
+        // アイテム画像を描画
+        let imageName = this.getImageName();
+        if (itemImages && itemImages[imageName]) {
+            // 画像を中央に配置
+            imageMode(CENTER);
+            tint(255, 200); // 少し透明度を下げて柔らかく
+            image(itemImages[imageName], 0, 0, this.size, this.size);
+            noTint(); // tintをリセット
+        } else {
+            // 画像が読み込まれていない場合はフォールバック描画
+            this.drawFallbackItem();
+        }
+    }
+    
+    // 画像名取得
+    getImageName() {
+        switch(this.type) {
+            case 'LIFE_UP': return 'hp';
+            case 'PADDLE_EXPAND': return 'shield';
+            case 'BALL_MULTIPLY': return 'ball';
+            case 'SLOW_PENALTY': return 'skull';
+            default: return 'hp';
+        }
+    }
+    
+    // フォールバック描画（画像が読み込まれない場合）
+    drawFallbackItem() {
         switch(this.type) {
             case 'LIFE_UP':
                 fill(255, 120, 120);
                 stroke(255, 200, 200);
                 strokeWeight(2);
-                drawHeart(0, 0, this.size/2);
-                
-                // ハートの輝き
-                fill(255, 255, 255, 100);
-                noStroke();
-                drawHeart(-1, -1, this.size/3);
+                // ハート形状を近似
+                ellipse(-3, -2, 6);
+                ellipse(3, -2, 6);
+                triangle(-6, 2, 6, 2, 0, 8);
                 break;
                 
             case 'PADDLE_EXPAND':
@@ -85,14 +116,8 @@ class Item {
                 stroke(200, 255, 200);
                 strokeWeight(2);
                 ellipse(0, 0, this.size);
-                
                 fill(80, 220, 80);
                 ellipse(0, 0, this.size * 0.7);
-                
-                // 中心の輝き
-                fill(255, 255, 255, 120);
-                noStroke();
-                ellipse(0, 0, this.size * 0.3);
                 break;
                 
             case 'BALL_MULTIPLY':
@@ -100,15 +125,9 @@ class Item {
                 stroke(255, 255, 200);
                 strokeWeight(2);
                 ellipse(0, 0, this.size);
-                
                 fill(220, 220, 100);
                 ellipse(-3, 0, this.size * 0.6);
                 ellipse(3, 0, this.size * 0.6);
-                
-                // 輝きエフェクト
-                fill(255, 255, 255, 100);
-                noStroke();
-                ellipse(0, 0, this.size * 0.4);
                 break;
                 
             case 'SLOW_PENALTY':
@@ -116,7 +135,6 @@ class Item {
                 stroke(220, 50, 50);
                 strokeWeight(2);
                 rect(-this.size/2, -this.size/2, this.size, this.size, 3);
-                
                 // 危険マーク
                 fill(220, 0, 0);
                 noStroke();

@@ -18,6 +18,9 @@ let items = [];
 let particles = [];
 let maxParticles = 50;
 
+// アイテム画像
+let itemImages = {};
+
 // スコアシステム
 let highScore = 0;
 let scoreMultiplier = 1;

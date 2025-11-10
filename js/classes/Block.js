@@ -32,8 +32,16 @@ class Block {
         
         // ブロック本体
         fill(this.color);
-        stroke(255, 255, 255, 150);
-        strokeWeight(1);
+        
+        // 特殊ブロックは太い枠線で区別
+        if (this.isSpecial && this.itemType) {
+            stroke(255, 255, 0, 200); // 黄色の枠線
+            strokeWeight(2);
+        } else {
+            stroke(255, 255, 255, 150);
+            strokeWeight(1);
+        }
+        
         rectMode(CORNER);
         rect(0, 0, this.width, this.height, 3);
         
@@ -111,15 +119,24 @@ class Block {
     
     // アイテム生成
     spawnItem() {
-        // アイテム生成確率チェック
+        // デバッグ情報
+        console.log("特殊ブロック破壊 - アイテムタイプ:", this.itemType);
+        
+        // テスト用：アイテムを必ず生成（確率を100%に設定）
+        let shouldSpawn = true;
+        
+        // 本来の確率システム（デバッグ後に使用）
+        /*
         let spawnChance = random(100);
         let shouldSpawn = false;
         
         if (this.itemType === 'SLOW_PENALTY') {
-            shouldSpawn = spawnChance < 70; // ペナルティは70%で出現
+            shouldSpawn = spawnChance < 80; // ペナルティは80%で出現
         } else {
-            shouldSpawn = spawnChance < 50; // 良いアイテムは50%で出現
+            shouldSpawn = spawnChance < 75; // 良いアイテムは75%で出現
         }
+        console.log("アイテム生成判定:", shouldSpawn, "確率:", spawnChance);
+        */
         
         if (shouldSpawn) {
             let item = new Item(
@@ -128,6 +145,9 @@ class Block {
                 this.itemType
             );
             items.push(item);
+            console.log("アイテム生成成功:", this.itemType, "アイテム総数:", items.length);
+        } else {
+            console.log("アイテム生成失敗 - 確率により不出現");
         }
     }
     

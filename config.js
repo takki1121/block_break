@@ -40,7 +40,7 @@ const blockLayout = {
     height: 20,
     spacing: 10,
     colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-    specialBlockRatio: 0.3  // 30%がアイテムブロック
+    specialBlockRatio: 0.5  // 50%がアイテムブロック（テスト用に増加）
 };
 
 // アイテムシステム設定

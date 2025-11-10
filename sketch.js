@@ -4,6 +4,33 @@
 // デバッグモード（開発時のみ有効）
 // const DEBUG_MODE = true;
 
+// p5.js preload関数 - アセット読み込み
+function preload() {
+    // アイテム画像を読み込み
+    try {
+        itemImages.hp = loadImage('img/hp.png', 
+            () => console.log("HP画像読み込み成功"),
+            () => console.error("HP画像読み込み失敗")
+        );
+        itemImages.shield = loadImage('img/shield.png',
+            () => console.log("Shield画像読み込み成功"),
+            () => console.error("Shield画像読み込み失敗")
+        );
+        itemImages.ball = loadImage('img/ball.png',
+            () => console.log("Ball画像読み込み成功"),
+            () => console.error("Ball画像読み込み失敗")
+        );
+        itemImages.skull = loadImage('img/skull.png',
+            () => console.log("Skull画像読み込み成功"),
+            () => console.error("Skull画像読み込み失敗")
+        );
+        
+        console.log("アイテム画像読み込み開始");
+    } catch (error) {
+        console.error("画像読み込み中にエラー:", error);
+    }
+}
+
 // p5.js setup関数 - 初期化処理
 function setup() {
     // キャンバス作成
@@ -18,6 +45,13 @@ function setup() {
     initializeInputSystem();
     initializeUI();
     initializeEffects();
+    
+    // 画像読み込み確認
+    console.log("アイテム画像読み込み状況:");
+    console.log("HP:", itemImages.hp ? "OK" : "NG");
+    console.log("Shield:", itemImages.shield ? "OK" : "NG");
+    console.log("Ball:", itemImages.ball ? "OK" : "NG");
+    console.log("Skull:", itemImages.skull ? "OK" : "NG");
     
     console.log("ゲーム初期化完了");
 }

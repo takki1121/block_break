@@ -23,11 +23,16 @@ function generateBlocks() {
             if (isSpecial) {
                 let itemTypes = Object.keys(itemConfig.types);
                 itemType = itemTypes[Math.floor(random(itemTypes.length))];
+                console.log("特殊ブロック生成:", "位置(" + col + "," + row + ")", "アイテム:", itemType);
             }
             
             blocks.push(new Block(x, y, blockColor, isSpecial, itemType));
         }
     }
+    
+    // ブロック生成統計
+    let specialBlocks = blocks.filter(block => block.isSpecial).length;
+    console.log("ブロック生成完了:", "総数:", blocks.length, "特殊ブロック:", specialBlocks);
 }
 
 // ゲーム条件チェック
