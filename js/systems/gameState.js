@@ -80,16 +80,24 @@ const gameStateManager = {
             case GAME_STATE.PLAYING:
                 if (this.previousState === GAME_STATE.PAUSED) {
                     totalPauseTime += millis() - pauseStartTime;
+                    // ポーズ解除音
+                    audioSystem.playSound('click', 0.6);
                 } else if (this.previousState === GAME_STATE.OPENING) {
                     gameStartTime = millis();
                     totalPauseTime = 0;
                     initializeGame();
+                    // ゲーム開始音
+                    audioSystem.playSound('click', 0.7);
                 } else if (this.previousState === GAME_STATE.LEVEL_CLEAR) {
                     initializeLevel();
+                    // レベル開始音
+                    audioSystem.playSound('click', 0.7);
                 }
                 break;
             case GAME_STATE.PAUSED:
                 pauseStartTime = millis();
+                // ポーズ音
+                audioSystem.playSound('click', 0.6);
                 break;
         }
     },

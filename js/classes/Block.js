@@ -97,6 +97,9 @@ class Block {
             this.isDestroyed = true;
             this.destroyAnimation = 30; // 30フレームのアニメーション
             
+            // ブロック破壊音
+            audioSystem.playSound('hakai', 0.8);
+            
             // 爆発エフェクト生成
             let centerX = this.position.x + this.width / 2;
             let centerY = this.position.y + this.height / 2;

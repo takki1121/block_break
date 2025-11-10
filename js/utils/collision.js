@@ -33,6 +33,9 @@ function checkBallPaddleCollision(ball) {
         ball.velocity.vx = hitPos * 4; // 横方向の速度
         ball.velocity.vy = -Math.abs(ball.velocity.vy); // 上向きに反射
         
+        // ボール反射音
+        audioSystem.playSound('reflect', 0.5);
+        
         // ボールがパドルに埋まらないように位置調整
         ball.position.y = paddleBounds.top - ball.radius;
     }

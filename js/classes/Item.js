@@ -192,6 +192,9 @@ class Item {
     
     // アイテム効果適用（エフェクト追加 - フェーズ7）
     applyEffect(paddle) {
+        // アイテム取得音
+        audioSystem.playSound('get', 0.6);
+        
         // エフェクト生成
         createItemEffect(this.position.x, this.position.y, this.type);
         

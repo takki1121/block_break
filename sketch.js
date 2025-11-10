@@ -6,6 +6,9 @@
 
 // p5.js preload関数 - アセット読み込み
 function preload() {
+    // 音響システムのプリロード
+    audioSystem.preload();
+    
     // アイテム画像を読み込み
     try {
         itemImages.hp = loadImage('img/hp.png', 
@@ -45,6 +48,10 @@ function setup() {
     initializeInputSystem();
     initializeUI();
     initializeEffects();
+    
+    // 音響システムの初期化
+    audioSystem.initialize();
+    audioSystem.checkLoadStatus();
     
     // 画像読み込み確認
     console.log("アイテム画像読み込み状況:");

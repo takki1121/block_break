@@ -120,6 +120,11 @@ class Ball {
             bounced = true;
         }
         
+        // 壁に反射した場合は反射音を再生
+        if (bounced) {
+            audioSystem.playSound('reflect', 0.4);
+        }
+        
         // 下の壁は updateGame() で処理されるので、ここでは何もしない
         
         return bounced;
