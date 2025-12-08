@@ -313,14 +313,45 @@ function drawPauseOverlay() {
     noStroke();
     rect(0, 0, width, height);
     
-    // ポーズテキスト
+    // ポーズメッセージの背景（黒枠）
+    const pauseText = "PAUSED";
+    
+    // テキスト設定
     textAlign(CENTER, CENTER);
     textFont('Delius');
-    
-    fill(255, 255, 255);
     textSize(48);
-    text("PAUSED", width/2, height/2 - 40);
     
+    // テキストの実際の位置
+    const textX = width / 2;
+    const textY = height / 2 - 40;
+    
+    // 固定サイズの背景枠を画面中央に配置（横70%、縦50%）
+    const bgWidth = width * 0.7;
+    const bgHeight = height * 0.5;
+    const bgX = width / 2;
+    const bgY = height / 2;
+    
+    // 黒い背景枠を描画（CENTER モードで中央配置）
+    rectMode(CENTER);
+    fill(0, 0, 0, 200);
+    noStroke();
+    rect(bgX, bgY, bgWidth, bgHeight);
+    
+    // 白い枠線
+    stroke(255, 255, 255);
+    strokeWeight(2);
+    noFill();
+    rect(bgX, bgY, bgWidth, bgHeight);
+    
+    // rectMode を元に戻す
+    rectMode(CORNER);
+    
+    // PAUSEDテキストを描画
+    fill(255, 255, 255);
+    noStroke();
+    text(pauseText, textX, textY);
+    
+    // 操作説明テキスト
     let pulseAlpha = map(sin(frameCount * 0.1), -1, 1, 150, 255);
     fill(255, 255, 255, pulseAlpha);
     textSize(18);
