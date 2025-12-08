@@ -85,8 +85,8 @@ const inputConfig = {
 // UI設定
 const uiConfig = {
     pauseButton: {
-        width: 60,
-        height: 30,
+        width: 120,
+        height: 50,
         margin: 10
     },
     fonts: {

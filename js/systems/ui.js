@@ -3,8 +3,11 @@
 
 // UI初期化
 function initializeUI() {
-    uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - 10;
-    uiSystem.pauseButton.y = 10;
+    // config.jsの設定を使用してポーズボタンを初期化
+    uiSystem.pauseButton.width = uiConfig.pauseButton.width;
+    uiSystem.pauseButton.height = uiConfig.pauseButton.height;
+    uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - uiConfig.pauseButton.margin;
+    uiSystem.pauseButton.y = uiConfig.pauseButton.margin;
     uiSystem.showPauseOverlay = false;
     uiSystem.fadeOpacity = 0;
     uiSystem.transitionProgress = 0;
@@ -295,15 +298,24 @@ function drawPauseButton() {
     strokeWeight(1);
     rect(btn.x, btn.y, btn.width, btn.height, 3);
     
-    // ポーズアイコン
+    // ポーズアイコン（二本の縦線を中央に正確に配置）
     fill(255, 255, 255);
     noStroke();
-    let iconX = btn.x + btn.width/2;
-    let iconY = btn.y + btn.height/2;
     
-    // 二本の縦線
-    rect(iconX - 5, iconY - 6, 3, 12);
-    rect(iconX + 2, iconY - 6, 3, 12);
+    // ボタンの中心座標を計算
+    let centerX = btn.x ;
+    let centerY = btn.y+btn.height/4 ;
+    
+    // 線の幅と高さを定義（固定サイズ）
+    let lineWidth = 3;
+    let lineHeight = 12;
+    let lineSpacing = 4; // 二本の線の間隔
+    
+    // 左の縦線（中央から左に配置）
+    rect(centerX - lineSpacing/2 - lineWidth, centerY - lineHeight/2, lineWidth, lineHeight);
+    
+    // 右の縦線（中央から右に配置）
+    rect(centerX + lineSpacing/2, centerY - lineHeight/2, lineWidth, lineHeight);
 }
 
 // ポーズオーバーレイ
