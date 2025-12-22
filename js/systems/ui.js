@@ -274,7 +274,7 @@ function drawLivesAndLevel() {
     
     fill(100, 255, 100);
     textSize(16);
-    text(gameConfig.player.level, width - 18, 35);
+    text(gameConfig.player.level, width - 18, 30);
     
     // ライフ表示
     fill(255, 255, 255);
@@ -283,7 +283,7 @@ function drawLivesAndLevel() {
     
     // ハート表示
     for (let i = 0; i < gameConfig.player.maxLives; i++) {
-        let heartX = width - 35 - (i * 15);
+        let heartX = width - 25 - (i * 15); // 右にずらす（-35から-25に変更）
         let heartY = 68;
         
         if (i < gameConfig.player.lives) {
