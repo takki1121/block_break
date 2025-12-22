@@ -89,6 +89,12 @@ const uiConfig = {
         height: 50,
         margin: 10
     },
+    muteButton: {
+        width: 40,
+        height: 30,
+        margin: 10,
+        scoreMargin: 140  // スコア表示（10px + 120px + 10px間隔）の右隣
+    },
     fonts: {
         title: { size: 48, family: 'Delius' },
         subtitle: { size: 24, family: 'Delius' },

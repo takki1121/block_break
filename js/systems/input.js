@@ -73,6 +73,13 @@ function updateInputPosition(rawX) {
 
 // 統一されたゲーム入力処理
 function handleGameInput() {
+    // ミュートボタンのクリック判定（ゲームオーバー時は無効）
+    if (currentState !== GAME_STATE.GAME_OVER && isMouseOverMuteButton()) {
+        audioSystem.toggleMute();
+        audioSystem.playSound('click', 0.3); // ミュート切り替え音
+        return;
+    }
+    
     // ポーズボタンのクリック判定
     if (currentState === GAME_STATE.PLAYING && isMouseOverPauseButton()) {
         gameStateManager.changeState(GAME_STATE.PAUSED);

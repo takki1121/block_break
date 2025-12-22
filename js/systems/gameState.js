@@ -37,6 +37,7 @@ let inputSystem = {
 // UI システム
 let uiSystem = {
     pauseButton: { x: 0, y: 0, width: 0, height: 0, visible: true },
+    muteButton: { x: 0, y: 0, width: 30, height: 30, visible: true },
     showPauseOverlay: false,
     fadeOpacity: 0,
     transitionProgress: 0

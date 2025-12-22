@@ -8,6 +8,13 @@ function initializeUI() {
     uiSystem.pauseButton.height = uiConfig.pauseButton.height;
     uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - uiConfig.pauseButton.margin;
     uiSystem.pauseButton.y = uiConfig.pauseButton.margin;
+    
+    // config.jsの設定を使用してミュートボタンを初期化
+    uiSystem.muteButton.width = uiConfig.muteButton.width;
+    uiSystem.muteButton.height = uiConfig.muteButton.height;
+    uiSystem.muteButton.x = uiConfig.muteButton.scoreMargin;
+    uiSystem.muteButton.y = uiConfig.muteButton.margin;
+    
     uiSystem.showPauseOverlay = false;
     uiSystem.fadeOpacity = 0;
     uiSystem.transitionProgress = 0;
@@ -32,6 +39,9 @@ function drawOpening() {
     
     // フッター情報
     drawFooterInfo();
+    
+    // ミュートボタン（オープニング画面）
+    drawMuteButton();
 }
 
 // 動的背景
@@ -58,11 +68,11 @@ function drawMainTitle() {
     
     // メインタイトル
     textAlign(CENTER, CENTER);
-    textFont('Delius');
+    textFont(uiConfig.fonts.title.family);
     
     // 外側の影
     fill(0, 0, 0, 150);
-    textSize(52);
+    textSize(uiConfig.fonts.title.size + 4);
     text("BLOCK BREAKER", width/2 + 3, 150 + 3);
     
     // メインテキスト
@@ -72,19 +82,19 @@ function drawMainTitle() {
         (sin(frameCount * 0.02) + 1) / 2
     );
     fill(titleColor);
-    textSize(48);
+    textSize(uiConfig.fonts.title.size);
     text("BLOCK BREAKER", width/2, 150);
     
     // サブタイトル
     fill(200, 200, 200);
-    textSize(16);
+    textSize(uiConfig.fonts.ui.size);
     text("- Retro Arcade Style -", width/2, 180);
 }
 
 // ハイスコア表示
 function drawHighScoreDisplay() {
     textAlign(CENTER, CENTER);
-    textFont('Delius');
+    textFont(uiConfig.fonts.subtitle.family);
     
     // ハイスコア背景
     fill(0, 0, 0, 80);
@@ -94,11 +104,11 @@ function drawHighScoreDisplay() {
     
     // ハイスコアテキスト
     fill(255, 215, 0);
-    textSize(14);
+    textSize(uiConfig.fonts.small.size + 2);
     text("HIGH SCORE", width/2, 210);
     
-    fill(255, 255, 255);
-    textSize(20);
+    fill(uiConfig.colors.text);
+    textSize(uiConfig.fonts.ui.size + 4);
     text(highScore.toLocaleString(), width/2, 230);
 }
 
@@ -220,6 +230,9 @@ function drawHUD() {
     // ライフ・レベル表示（右上）
     drawLivesAndLevel();
     
+    // ミュートボタン
+    drawMuteButton();
+    
     // ポーズボタン
     drawPauseButton();
 }
@@ -227,7 +240,7 @@ function drawHUD() {
 // スコア表示
 function drawScore() {
     textAlign(LEFT, TOP);
-    textFont('Delius');
+    textFont(uiConfig.fonts.ui.family);
     
     // 背景
     fill(0, 0, 0, 100);
@@ -235,12 +248,12 @@ function drawScore() {
     rect(10, 10, 120, 35, 5);
     
     // スコアテキスト
-    fill(255, 255, 255);
-    textSize(12);
+    fill(uiConfig.colors.text);
+    textSize(uiConfig.fonts.small.size);
     text("SCORE", 18, 20);
     
     fill(255, 215, 0);
-    textSize(16);
+    textSize(uiConfig.fonts.ui.size);
     text(gameConfig.player.score.toLocaleString(), 18, 35);
 }
 
@@ -316,6 +329,60 @@ function drawPauseButton() {
     
     // 右の縦線（中央から右に配置）
     rect(centerX + lineSpacing/2, centerY - lineHeight/2, lineWidth, lineHeight);
+}
+
+// ミュートボタン
+function drawMuteButton() {
+    let btn = uiSystem.muteButton;
+    
+    // ボタン背景
+    if (isMouseOverMuteButton()) {
+        fill(100, 100, 100, 150);
+    } else {
+        fill(0, 0, 0, 100);
+    }
+    
+    stroke(255, 255, 255, 150);
+    strokeWeight(1);
+    rect(btn.x, btn.y, btn.width, btn.height, 3);
+    
+    // サウンドアイコンの中央座標を正しく計算
+    let centerX = btn.x + btn.width / 2-20;
+    let centerY = btn.y + btn.height / 2-15;
+    
+    if (audioSystem.isMuted) {
+        // ミュート状態：Xマーク（config色設定を使用）
+        stroke(uiConfig.colors.warning);
+        strokeWeight(2);
+        noFill();
+        line(centerX - 6, centerY - 6, centerX + 6, centerY + 6);
+        line(centerX - 6, centerY + 6, centerX + 6, centerY - 6);
+        noStroke();
+    } else {
+        // 音声ON：スピーカーアイコン
+        noStroke();
+        fill(uiConfig.colors.text);
+        
+        // スピーカー本体（矩形部分）
+        rect(centerX - 8, centerY - 4, 6, 8);
+        
+        // スピーカーホーン部分（三角形）
+        triangle(
+            centerX - 2, centerY - 4,
+            centerX - 2, centerY + 4, 
+            centerX + 3, centerY
+        );
+        
+        // 音波線（config色設定を使用）
+        stroke(uiConfig.colors.accent);
+        strokeWeight(1);
+        noFill();
+        // 内側の音波
+        arc(centerX + 4, centerY, 8, 8, -PI/3, PI/3);
+        // 外側の音波
+        arc(centerX + 5, centerY, 12, 12, -PI/4, PI/4);
+        noStroke();
+    }
 }
 
 // ポーズオーバーレイ
@@ -419,6 +486,16 @@ function drawGameOver() {
 // ポーズボタン上マウス判定
 function isMouseOverPauseButton() {
     let btn = uiSystem.pauseButton;
+    let mx = inputSystem.isTouch ? (touches.length > 0 ? touches[0].x : 0) : mouseX;
+    let my = inputSystem.isTouch ? (touches.length > 0 ? touches[0].y : 0) : mouseY;
+    
+    return mx >= btn.x && mx <= btn.x + btn.width &&
+           my >= btn.y && my <= btn.y + btn.height;
+}
+
+// ミュートボタンマウスオーバー判定
+function isMouseOverMuteButton() {
+    let btn = uiSystem.muteButton;
     let mx = inputSystem.isTouch ? (touches.length > 0 ? touches[0].x : 0) : mouseX;
     let my = inputSystem.isTouch ? (touches.length > 0 ? touches[0].y : 0) : mouseY;
     

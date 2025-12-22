@@ -10,6 +10,7 @@ const audioSystem = {
     sounds: {},
     isLoaded: false,
     isMuted: false,
+    masterVolume: 0.7,  // マスター音量 (0.0 - 1.0)
     
     // 音声ファイルの定義
     soundFiles: {
@@ -40,15 +41,16 @@ const audioSystem = {
     /**
      * 音声再生機能
      * @param {string} soundName - 再生する音声名
-     * @param {number} volume - 音量 (0.0 - 1.0)
+     * @param {number} volume - 個別音量 (0.0 - 1.0)
      */
     playSound(soundName, volume = 0.5) {
         if (this.isMuted) return;
         
         if (this.sounds[soundName]) {
             try {
-                // 音量設定
-                this.sounds[soundName].setVolume(volume);
+                // マスター音量と個別音量を掛け合わせて最終音量を決定
+                const finalVolume = volume * this.masterVolume;
+                this.sounds[soundName].setVolume(finalVolume);
                 
                 // 既に再生中の場合は停止してから再生
                 if (this.sounds[soundName].isPlaying()) {
@@ -92,9 +94,11 @@ const audioSystem = {
      * 音響システムの初期化完了チェック
      */
     initialize() {
+        this.loadAudioSettings(); // 保存された設定を読み込み
         this.isLoaded = true;
         console.log('音響システム初期化完了');
         console.log('読み込み済み音声:', Object.keys(this.sounds));
+        console.log('音声設定:', { isMuted: this.isMuted, masterVolume: this.masterVolume });
     },
     
     /**
@@ -134,6 +138,72 @@ const audioSystem = {
     },
     
     /**
+     * マスター音量の設定
+     * @param {number} volume - 音量 (0.0 - 1.0)
+     */
+    setMasterVolume(volume) {
+        this.masterVolume = Math.max(0, Math.min(1, volume));
+        this.saveAudioSettings();
+        console.log(`マスター音量設定: ${this.masterVolume}`);
+    },
+
+    /**
+     * マスター音量の取得
+     * @returns {number} 現在のマスター音量
+     */
+    getMasterVolume() {
+        return this.masterVolume;
+    },
+
+    /**
+     * ミュート状態の設定
+     * @param {boolean} muted - ミュート状態
+     */
+    setMuted(muted) {
+        this.isMuted = muted;
+        if (this.isMuted) {
+            this.stopAllSounds();
+        }
+        this.saveAudioSettings();
+        console.log(`音声: ${this.isMuted ? 'OFF' : 'ON'}`);
+    },
+
+    /**
+     * 音声設定の保存
+     */
+    saveAudioSettings() {
+        try {
+            const settings = {
+                isMuted: this.isMuted,
+                masterVolume: this.masterVolume
+            };
+            localStorage.setItem('audioSettings', JSON.stringify(settings));
+        } catch (error) {
+            console.warn('音声設定の保存に失敗:', error);
+        }
+    },
+
+    /**
+     * 音声設定の読み込み
+     */
+    loadAudioSettings() {
+        try {
+            const settings = localStorage.getItem('audioSettings');
+            if (settings) {
+                const parsed = JSON.parse(settings);
+                this.isMuted = parsed.isMuted || false;
+                this.masterVolume = parsed.masterVolume !== undefined ? parsed.masterVolume : 0.7;
+                console.log('音声設定を読み込みました:', { isMuted: this.isMuted, masterVolume: this.masterVolume });
+            }
+        } catch (error) {
+            console.warn('音声設定の読み込みに失敗:', error);
+            // デフォルト値を設定
+            this.isMuted = false;
+            this.masterVolume = 0.7;
+        }
+    },
+
+    /**
      * 音響システムの詳細情報を取得
      * @returns {object} システム情報
      */
@@ -141,6 +211,7 @@ const audioSystem = {
         return {
             isLoaded: this.isLoaded,
             isMuted: this.isMuted,
+            masterVolume: this.masterVolume,
             availableSounds: Object.keys(this.sounds),
             loadedCount: Object.values(this.sounds).filter(sound => sound !== null).length,
             totalCount: Object.keys(this.soundFiles).length
