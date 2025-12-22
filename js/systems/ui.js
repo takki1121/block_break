@@ -287,9 +287,9 @@ function drawLivesAndLevel() {
         let heartY = 68;
         
         if (i < gameConfig.player.lives) {
-            fill(255, 100, 100);
+            fill(255, 100, 100); // 赤いハート（アクティブなライフ）
         } else {
-            fill(80, 80, 80);
+            fill(80, 80, 80); // 灰色のハート（失ったライフ）
         }
         
         drawHeart(heartX, heartY, 6);
@@ -507,8 +507,8 @@ function isMouseOverMuteButton() {
 function drawHeart(x, y, size) {
     push();
     translate(x, y);
-    fill(255, 100, 100);
     noStroke();
+    // fill色は呼び出し元で設定されているので、ここでは設定しない
     
     // ハート形状を三角形と円で近似
     ellipse(-size/3, -size/4, size/2);
