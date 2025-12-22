@@ -111,11 +111,6 @@ function draw() {
 
 // レベルクリアメッセージ描画
 function drawLevelClearMessage() {
-    // 半透明オーバーレイ
-    fill(0, 0, 0, 150);
-    noStroke();
-    rect(0, 0, width, height);
-    
     // レベルクリアテキスト
     textAlign(CENTER, CENTER);
     textFont('Delius');
