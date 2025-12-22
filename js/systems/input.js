@@ -1,6 +1,13 @@
 // 入力システム
 // マウス・タッチ入力の統一処理、デバイス判定、座標正規化を管理
 
+// 入力座標更新関数
+function updateInputCoordinates() {
+    // スケール変更時に入力座標を正規化
+    inputSystem.currentInputX = constrain(inputSystem.currentInputX, 0, width);
+    inputSystem.targetInputX = constrain(inputSystem.targetInputX, 0, width);
+}
+
 // 入力システム初期化
 function initializeInputSystem() {
     inputSystem.currentInputX = width / 2;

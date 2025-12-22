@@ -36,8 +36,22 @@ function preload() {
 
 // p5.js setup関数 - 初期化処理
 function setup() {
-    // キャンバス作成
-    createCanvas(gameConfig.canvas.width, gameConfig.canvas.height);
+    // 初期スケール係数の計算
+    gameConfig.canvas.scaleFactor = calculateScaleFactor();
+    
+    // デスクトップでは元の固定サイズ、モバイルではスケール適用
+    const canvasWidth = gameConfig.canvas.width * gameConfig.canvas.scaleFactor;
+    const canvasHeight = gameConfig.canvas.height * gameConfig.canvas.scaleFactor;
+    createCanvas(canvasWidth, canvasHeight);
+    
+    // デスクトップの場合、キャンバスを中央配置
+    if (gameConfig.canvas.scaleFactor === 1.0) {
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
+        }
+    }
     
     // 基本設定
     colorMode(RGB);
@@ -134,10 +148,131 @@ function drawLevelClearMessage() {
     text("Preparing next level...", width/2, height/2 + 60);
 }
 
+// スケール係数計算関数
+function calculateScaleFactor() {
+    // 基準となるキャンバスサイズ
+    const baseWidth = 800;
+    const baseHeight = 600;
+    
+    // デスクトップかモバイルかを判定
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // デスクトップの場合は固定サイズを維持
+    if (!isMobile && window.innerWidth >= 1024) {
+        return 1.0; // 元のサイズを維持
+    }
+    
+    // モバイル・タブレットの場合のみレスポンシブ対応
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+    
+    // アスペクト比を維持しながらスケール係数を計算
+    const scaleX = windowW / baseWidth;
+    const scaleY = windowH / baseHeight;
+    
+    // 小さい方のスケールを採用してアスペクト比を維持
+    let scaleFactor = Math.min(scaleX, scaleY);
+    
+    // 最小・最大スケールの制限（モバイル用）
+    scaleFactor = Math.max(0.5, Math.min(scaleFactor, 1.5));
+    
+    return scaleFactor;
+}
+
+// キャンバスと要素のリサイズ関数
+function resizeGameElements() {
+    const scaleFactor = calculateScaleFactor();
+    
+    // キャンバスサイズの更新
+    const newWidth = gameConfig.canvas.width * scaleFactor;
+    const newHeight = gameConfig.canvas.height * scaleFactor;
+    
+    // p5.jsキャンバスのリサイズ
+    resizeCanvas(newWidth, newHeight);
+    
+    // スケール係数をconfigに保存
+    gameConfig.canvas.scaleFactor = scaleFactor;
+    
+    // ゲーム要素の位置とサイズを更新
+    updateGameElementsScale(scaleFactor);
+    
+    console.log(`Canvas resized to: ${newWidth}x${newHeight}, Scale: ${scaleFactor.toFixed(2)}`);
+}
+
+// ゲーム要素のスケール更新関数
+function updateGameElementsScale(scaleFactor) {
+    // パドルの位置とサイズを更新
+    if (typeof paddle !== 'undefined' && paddle) {
+        paddle.x = paddle.x; // 相対位置は維持
+        paddle.width = gameConfig.paddle.width * scaleFactor;
+        paddle.height = gameConfig.paddle.height * scaleFactor;
+    }
+    
+    // ボールの位置とサイズを更新
+    if (typeof balls !== 'undefined' && balls.length > 0) {
+        balls.forEach(ball => {
+            ball.radius = ball.originalRadius ? ball.originalRadius * scaleFactor : 8 * scaleFactor;
+        });
+    }
+    
+    // ブロックのサイズと位置を更新
+    if (typeof blocks !== 'undefined' && blocks.length > 0) {
+        blocks.forEach(block => {
+            block.width = blockLayout.width * scaleFactor;
+            block.height = blockLayout.height * scaleFactor;
+            // ブロックの位置は初期化時に再計算される
+        });
+        // ブロック配置の再計算
+        repositionBlocks();
+    }
+    
+    // アイテムのサイズ更新
+    if (typeof items !== 'undefined' && items.length > 0) {
+        items.forEach(item => {
+            item.size = 20 * scaleFactor;
+        });
+    }
+    
+    // パーティクルのサイズ更新
+    if (typeof particles !== 'undefined' && particles.length > 0) {
+        particles.forEach(particle => {
+            if (particle.originalSize) {
+                particle.size = particle.originalSize * scaleFactor;
+            }
+        });
+    }
+}
+
+// ブロック配置の再計算関数
+function repositionBlocks() {
+    const scaleFactor = gameConfig.canvas.scaleFactor;
+    const startX = (width - (blockLayout.cols * (blockLayout.width * scaleFactor) + (blockLayout.cols - 1) * (blockLayout.spacing * scaleFactor))) / 2;
+    const startY = 80 * scaleFactor;
+    
+    blocks.forEach((block, index) => {
+        const row = Math.floor(index / blockLayout.cols);
+        const col = index % blockLayout.cols;
+        
+        block.x = startX + col * ((blockLayout.width + blockLayout.spacing) * scaleFactor);
+        block.y = startY + row * ((blockLayout.height + blockLayout.spacing) * scaleFactor);
+    });
+}
+
 // ウィンドウリサイズ対応
 function windowResized() {
-    // 現在は固定サイズのため処理なし
-    // 将来的にレスポンシブ対応時に実装
+    // デスクトップの場合はリサイズしない
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile && window.innerWidth >= 1024) {
+        return; // デスクトップでは固定サイズを維持
+    }
+    
+    // モバイル・タブレットの場合のみレスポンシブリサイズを実行
+    resizeGameElements();
+    
+    // 入力システムの座標も更新
+    if (typeof updateInputCoordinates !== 'undefined') {
+        updateInputCoordinates();
+    }
 }
 
 // p5.js エラーハンドリング

@@ -1,23 +1,46 @@
 // UI システム
 // ゲームの各画面描画、HUD表示、ポーズ機能を管理
 
+// スケール対応ヘルパー関数群
+function getScaledValue(value) {
+    return value * gameConfig.canvas.scaleFactor;
+}
+
+function getScaledFont(baseSize) {
+    return baseSize * gameConfig.canvas.scaleFactor;
+}
+
+function getScaledPosition(x, y) {
+    return {
+        x: x * gameConfig.canvas.scaleFactor,
+        y: y * gameConfig.canvas.scaleFactor
+    };
+}
+
 // UI初期化
 function initializeUI() {
-    // config.jsの設定を使用してポーズボタンを初期化
-    uiSystem.pauseButton.width = uiConfig.pauseButton.width;
-    uiSystem.pauseButton.height = uiConfig.pauseButton.height;
-    uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - uiConfig.pauseButton.margin;
-    uiSystem.pauseButton.y = uiConfig.pauseButton.margin;
-    
-    // config.jsの設定を使用してミュートボタンを初期化
-    uiSystem.muteButton.width = uiConfig.muteButton.width;
-    uiSystem.muteButton.height = uiConfig.muteButton.height;
-    uiSystem.muteButton.x = uiConfig.muteButton.scoreMargin;
-    uiSystem.muteButton.y = uiConfig.muteButton.margin;
+    updateUIScale();
     
     uiSystem.showPauseOverlay = false;
     uiSystem.fadeOpacity = 0;
     uiSystem.transitionProgress = 0;
+}
+
+// UIスケールの更新
+function updateUIScale() {
+    const scaleFactor = gameConfig.canvas.scaleFactor;
+    
+    // ポーズボタンのスケール更新
+    uiSystem.pauseButton.width = getScaledValue(uiConfig.pauseButton.width);
+    uiSystem.pauseButton.height = getScaledValue(uiConfig.pauseButton.height);
+    uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - getScaledValue(uiConfig.pauseButton.margin);
+    uiSystem.pauseButton.y = getScaledValue(uiConfig.pauseButton.margin);
+    
+    // ミュートボタンのスケール更新
+    uiSystem.muteButton.width = getScaledValue(uiConfig.muteButton.width);
+    uiSystem.muteButton.height = getScaledValue(uiConfig.muteButton.height);
+    uiSystem.muteButton.x = getScaledValue(uiConfig.muteButton.scoreMargin);
+    uiSystem.muteButton.y = getScaledValue(uiConfig.muteButton.margin);
 }
 
 // オープニング画面描画（改良版）
@@ -60,11 +83,17 @@ function drawAnimatedBackground() {
 
 // メインタイトル
 function drawMainTitle() {
+    // スケール対応の値計算
+    const titleY = getScaledValue(150);
+    const bgWidth = getScaledValue(500);
+    const bgHeight = getScaledValue(100);
+    const shadowOffset = getScaledValue(3);
+    
     // タイトル背景
     fill(0, 0, 0, 100);
     noStroke();
     rectMode(CENTER);
-    rect(width/2, 150, 500, 100, 10);
+    rect(width/2, titleY, bgWidth, bgHeight, getScaledValue(10));
     
     // メインタイトル
     textAlign(CENTER, CENTER);
@@ -72,8 +101,8 @@ function drawMainTitle() {
     
     // 外側の影
     fill(0, 0, 0, 150);
-    textSize(uiConfig.fonts.title.size + 4);
-    text("BLOCK BREAKER", width/2 + 3, 150 + 3);
+    textSize(getScaledFont(uiConfig.fonts.title.size + 4));
+    text("BLOCK BREAKER", width/2 + shadowOffset, titleY + shadowOffset);
     
     // メインテキスト
     let titleColor = lerpColor(
@@ -82,8 +111,8 @@ function drawMainTitle() {
         (sin(frameCount * 0.02) + 1) / 2
     );
     fill(titleColor);
-    textSize(uiConfig.fonts.title.size);
-    text("BLOCK BREAKER", width/2, 150);
+    textSize(getScaledFont(uiConfig.fonts.title.size));
+    text("BLOCK BREAKER", width/2, titleY);
     
     // サブタイトル
     fill(200, 200, 200);
@@ -242,19 +271,26 @@ function drawScore() {
     textAlign(LEFT, TOP);
     textFont(uiConfig.fonts.ui.family);
     
+    // スケールを考慮したサイズと位置
+    const margin = getScaledValue(10);
+    const width = getScaledValue(120);
+    const height = getScaledValue(35);
+    const radius = getScaledValue(5);
+    const textMargin = getScaledValue(8);
+    
     // 背景
     fill(0, 0, 0, 100);
     noStroke();
-    rect(10, 10, 120, 35, 5);
+    rect(margin, margin, width, height, radius);
     
     // スコアテキスト
     fill(uiConfig.colors.text);
-    textSize(uiConfig.fonts.small.size);
-    text("SCORE", 18, 20);
+    textSize(getScaledFont(uiConfig.fonts.small.size));
+    text("SCORE", margin + textMargin, margin + getScaledValue(10));
     
     fill(255, 215, 0);
-    textSize(uiConfig.fonts.ui.size);
-    text(gameConfig.player.score.toLocaleString(), 18, 35);
+    textSize(getScaledFont(uiConfig.fonts.ui.size));
+    text(gameConfig.player.score.toLocaleString(), margin + textMargin, margin + getScaledValue(25));
 }
 
 // ライフ・レベル表示
@@ -262,29 +298,36 @@ function drawLivesAndLevel() {
     textAlign(RIGHT, TOP);
     textFont('Delius');
     
+    // スケールを考慮したサイズと位置
+    const panelWidth = getScaledValue(130);
+    const panelHeight = getScaledValue(50);
+    const margin = getScaledValue(10);
+    const radius = getScaledValue(5);
+    const textMargin = getScaledValue(18);
+    
     // 背景
     fill(0, 0, 0, 100);
     noStroke();
-    rect(width - 130, 10, 120, 50, 5);
+    rect(width - panelWidth, margin, getScaledValue(120), panelHeight, radius);
     
     // レベル表示
     fill(255, 255, 255);
-    textSize(12);
-    text("LEVEL", width - 18, 20);
+    textSize(getScaledFont(12));
+    text("LEVEL", width - textMargin, margin + getScaledValue(10));
     
     fill(100, 255, 100);
-    textSize(16);
-    text(gameConfig.player.level, width - 18, 30);
+    textSize(getScaledFont(16));
+    text(gameConfig.player.level, width - textMargin, margin + getScaledValue(20));
     
     // ライフ表示
     fill(255, 255, 255);
-    textSize(12);
-    text("LIVES", width - 18, 50);
+    textSize(getScaledFont(12));
+    text("LIVES", width - textMargin, margin + getScaledValue(40));
     
     // ハート表示
     for (let i = 0; i < gameConfig.player.maxLives; i++) {
-        let heartX = width - 25 - (i * 15); // 右にずらす（-35から-25に変更）
-        let heartY = 68;
+        let heartX = width - getScaledValue(25) - (i * getScaledValue(15));
+        let heartY = margin + getScaledValue(58);
         
         if (i < gameConfig.player.lives) {
             fill(255, 100, 100); // 赤いハート（アクティブなライフ）
@@ -292,7 +335,7 @@ function drawLivesAndLevel() {
             fill(80, 80, 80); // 灰色のハート（失ったライフ）
         }
         
-        drawHeart(heartX, heartY, 6);
+        drawHeart(heartX, heartY, getScaledValue(6));
     }
 }
 
@@ -308,21 +351,21 @@ function drawPauseButton() {
     }
     
     stroke(255, 255, 255, 150);
-    strokeWeight(1);
-    rect(btn.x, btn.y, btn.width, btn.height, 3);
+    strokeWeight(getScaledValue(1));
+    rect(btn.x, btn.y, btn.width, btn.height, getScaledValue(3));
     
     // ポーズアイコン（二本の縦線を中央に正確に配置）
     fill(255, 255, 255);
     noStroke();
     
     // ボタンの中心座標を計算
-    let centerX = btn.x ;
-    let centerY = btn.y+btn.height/4 ;
+    let centerX = btn.x + btn.width / 2;
+    let centerY = btn.y + btn.height / 2;
     
-    // 線の幅と高さを定義（固定サイズ）
-    let lineWidth = 3;
-    let lineHeight = 12;
-    let lineSpacing = 4; // 二本の線の間隔
+    // 線の幅と高さを定義（スケール対応）
+    let lineWidth = getScaledValue(3);
+    let lineHeight = getScaledValue(12);
+    let lineSpacing = getScaledValue(4); // 二本の線の間隔
     
     // 左の縦線（中央から左に配置）
     rect(centerX - lineSpacing/2 - lineWidth, centerY - lineHeight/2, lineWidth, lineHeight);

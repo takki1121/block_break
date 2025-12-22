@@ -36,6 +36,16 @@ canvas {
   touch-action: none; /* タッチ操作の最適化 */
 }
 
+/* デスクトップ向け固定サイズ設定 */
+@media screen and (min-width: 1024px) {
+  canvas {
+    width: 800px !important;
+    height: 600px !important;
+    max-width: 800px;
+    max-height: 600px;
+  }
+}
+
 /* スマホ横向き時の調整 */
 @media screen and (orientation: landscape) and (max-height: 500px) {
   body {
