@@ -39,9 +39,28 @@ function setup() {
     // 初期スケール係数の計算
     gameConfig.canvas.scaleFactor = calculateScaleFactor();
     
-    // デスクトップでは元の固定サイズ、モバイルではスケール適用
-    const canvasWidth = gameConfig.canvas.width * gameConfig.canvas.scaleFactor;
-    const canvasHeight = gameConfig.canvas.height * gameConfig.canvas.scaleFactor;
+    // デスクトップかスマートフォンかで基準サイズを変更
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isSmartphone = window.innerWidth <= 768;
+    
+    let baseWidth, baseHeight;
+    
+    if (!isMobile && window.innerWidth >= 1024) {
+        // デスクトップ：固定サイズ
+        baseWidth = gameConfig.canvas.width;
+        baseHeight = gameConfig.canvas.height;
+    } else if (isSmartphone) {
+        // スマートフォン：縦長（縦をより長く）
+        baseWidth = gameConfig.canvas.height; // 600px
+        baseHeight = gameConfig.canvas.width + 300; // 800px → 1100px
+    } else {
+        // タブレット：横長
+        baseWidth = gameConfig.canvas.width;
+        baseHeight = gameConfig.canvas.height;
+    }
+    
+    const canvasWidth = baseWidth * gameConfig.canvas.scaleFactor;
+    const canvasHeight = baseHeight * gameConfig.canvas.scaleFactor;
     createCanvas(canvasWidth, canvasHeight);
     
     // デスクトップの場合、キャンバスを中央配置
@@ -162,30 +181,70 @@ function calculateScaleFactor() {
         return 1.0; // 元のサイズを維持
     }
     
-    // モバイル・タブレットの場合のみレスポンシブ対応
+    // スマートフォンの判定（画面幅が狭い場合）
+    const isSmartphone = window.innerWidth <= 768;
+    
+    // モバイル・タブレットの場合のレスポンシブ対応
     const windowW = window.innerWidth;
     const windowH = window.innerHeight;
     
-    // アスペクト比を維持しながらスケール係数を計算
-    const scaleX = windowW / baseWidth;
-    const scaleY = windowH / baseHeight;
+    let targetWidth, targetHeight;
     
-    // 小さい方のスケールを採用してアスペクト比を維持
-    let scaleFactor = Math.min(scaleX, scaleY);
-    
-    // 最小・最大スケールの制限（モバイル用）
-    scaleFactor = Math.max(0.5, Math.min(scaleFactor, 1.5));
-    
-    return scaleFactor;
+    if (isSmartphone) {
+        // スマートフォンの場合：縦長にする（縦をより長く）
+        targetWidth = baseHeight; // 600px
+        targetHeight = baseWidth + 300; // 800px → 1100px（縦を300px延長）
+        
+        // アスペクト比を維持しながらスケール係数を計算
+        const scaleX = windowW / targetWidth;
+        const scaleY = windowH / targetHeight;
+        
+        // 小さい方のスケールを採用
+        let scaleFactor = Math.min(scaleX, scaleY);
+        
+        // スマートフォン用の最小・最大スケール制限
+        scaleFactor = Math.max(0.4, Math.min(scaleFactor, 1.2));
+        
+        return scaleFactor;
+    } else {
+        // タブレットの場合：横長を維持
+        const scaleX = windowW / baseWidth;
+        const scaleY = windowH / baseHeight;
+        
+        let scaleFactor = Math.min(scaleX, scaleY);
+        scaleFactor = Math.max(0.5, Math.min(scaleFactor, 1.5));
+        
+        return scaleFactor;
+    }
 }
 
 // キャンバスと要素のリサイズ関数
 function resizeGameElements() {
     const scaleFactor = calculateScaleFactor();
     
+    // デスクトップかスマートフォンかで基準サイズを変更
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isSmartphone = window.innerWidth <= 768;
+    
+    let baseWidth, baseHeight;
+    
+    if (!isMobile && window.innerWidth >= 1024) {
+        // デスクトップ：固定サイズ
+        baseWidth = gameConfig.canvas.width;
+        baseHeight = gameConfig.canvas.height;
+    } else if (isSmartphone) {
+        // スマートフォン：縦長（縦をより長く）
+        baseWidth = gameConfig.canvas.height; // 600px
+        baseHeight = gameConfig.canvas.width + 300; // 800px → 1100px
+    } else {
+        // タブレット：横長
+        baseWidth = gameConfig.canvas.width;
+        baseHeight = gameConfig.canvas.height;
+    }
+    
     // キャンバスサイズの更新
-    const newWidth = gameConfig.canvas.width * scaleFactor;
-    const newHeight = gameConfig.canvas.height * scaleFactor;
+    const newWidth = baseWidth * scaleFactor;
+    const newHeight = baseHeight * scaleFactor;
     
     // p5.jsキャンバスのリサイズ
     resizeCanvas(newWidth, newHeight);
@@ -196,7 +255,7 @@ function resizeGameElements() {
     // ゲーム要素の位置とサイズを更新
     updateGameElementsScale(scaleFactor);
     
-    console.log(`Canvas resized to: ${newWidth}x${newHeight}, Scale: ${scaleFactor.toFixed(2)}`);
+    console.log(`Canvas resized to: ${newWidth}x${newHeight}, Scale: ${scaleFactor.toFixed(2)}, Smartphone: ${isSmartphone}`);
 }
 
 // ゲーム要素のスケール更新関数
