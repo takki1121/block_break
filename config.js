@@ -25,6 +25,7 @@ const gameConfig = {
     },
     paddle: {
         width: 80,
+        baseWidth: 80,
         height: 15,
         expandedWidth: 120,
         expandDuration: 20000, // ms
@@ -40,7 +41,7 @@ const blockLayout = {
     height: 20,
     spacing: 10,
     colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-    specialBlockRatio: 0.5  // 50%がアイテムブロック（テスト用に増加）
+    specialBlockRatio: 0.35
 };
 
 // アイテムシステム設定
@@ -54,6 +55,30 @@ const itemConfig = {
     spawnRates: {
         level1: { good: [5,7], penalty: [2,3] },
         levelUp: { goodDecrease: 1, penaltyIncrease: 1, maxPenalty: 6 }
+    }
+};
+
+// 難易度スケーリング設定
+const difficultyConfig = {
+    ball: {
+        baseSpeed: 5,
+        speedIncreasePerLevel: 0.5,
+        maxSpeed: 9
+    },
+    paddle: {
+        widthDecreaseInterval: 2,
+        widthDecrease: 5,
+        minWidth: 60
+    },
+    blocks: {
+        baseRows: 4,
+        maxRows: 6,
+        rowIncreaseInterval: 3
+    },
+    specialBlocks: {
+        baseRatio: 0.35,
+        ratioIncreasePerLevel: 0.03,
+        maxRatio: 0.6
     }
 };
 

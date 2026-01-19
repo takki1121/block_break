@@ -1,17 +1,32 @@
 // ゲームロジックユーティリティ
 // ブロック生成、ゲーム条件チェック、リセット処理など
 
+// アイテム出現プール（レベルごとに構築）
+let itemPool = [];
+// ブロック衝突用のグリッド参照
+let blockGrid = [];
+let blockOrigin = { x: 0, y: 120 };
+let blockCell = { w: 0, h: 0 };
+
 // ブロック配置生成関数
 function generateBlocks() {
     blocks = [];
+    blockGrid = [];
+
+    // プールが空の場合は現在レベルで再構築しておく
+    if (itemPool.length === 0) {
+        prepareItemPoolForLevel(gameConfig.player.level);
+    }
     
-    let startX = (width - (blockLayout.cols * (blockLayout.width + blockLayout.spacing) - blockLayout.spacing)) / 2;
-    let startY = 120;
+    blockOrigin.x = (width - (blockLayout.cols * (blockLayout.width + blockLayout.spacing) - blockLayout.spacing)) / 2;
+    blockOrigin.y = 120;
+    blockCell.w = blockLayout.width + blockLayout.spacing;
+    blockCell.h = blockLayout.height + blockLayout.spacing;
     
     for (let row = 0; row < blockLayout.rows; row++) {
         for (let col = 0; col < blockLayout.cols; col++) {
-            let x = startX + col * (blockLayout.width + blockLayout.spacing);
-            let y = startY + row * (blockLayout.height + blockLayout.spacing);
+            let x = blockOrigin.x + col * blockCell.w;
+            let y = blockOrigin.y + row * blockCell.h;
             
             // ランダム色選択
             let blockColor = color(blockLayout.colors[Math.floor(random(blockLayout.colors.length))]);
@@ -21,18 +36,66 @@ function generateBlocks() {
             let itemType = null;
             
             if (isSpecial) {
-                let itemTypes = Object.keys(itemConfig.types);
-                itemType = itemTypes[Math.floor(random(itemTypes.length))];
+                itemType = getItemTypeForLevel(gameConfig.player.level);
                 console.log("特殊ブロック生成:", "位置(" + col + "," + row + ")", "アイテム:", itemType);
             }
             
-            blocks.push(new Block(x, y, blockColor, isSpecial, itemType));
+            const newBlock = new Block(x, y, blockColor, isSpecial, itemType);
+            blocks.push(newBlock);
+            if (!blockGrid[row]) blockGrid[row] = [];
+            blockGrid[row][col] = newBlock;
         }
     }
     
     // ブロック生成統計
     let specialBlocks = blocks.filter(block => block.isSpecial).length;
     console.log("ブロック生成完了:", "総数:", blocks.length, "特殊ブロック:", specialBlocks);
+}
+
+// レベルに応じたアイテムプールを組み立て
+function prepareItemPoolForLevel(level) {
+    const { level1, levelUp } = itemConfig.spawnRates;
+    const goodMin = Math.max(0, level1.good[0] - levelUp.goodDecrease * (level - 1));
+    const goodMax = Math.max(goodMin, level1.good[1] - levelUp.goodDecrease * (level - 1));
+    const penaltyMin = Math.min(level1.penalty[0] + levelUp.penaltyIncrease * (level - 1), levelUp.maxPenalty);
+    const penaltyMax = Math.min(level1.penalty[1] + levelUp.penaltyIncrease * (level - 1), levelUp.maxPenalty);
+    
+    const goodCount = Math.max(0, Math.round(random(goodMin, goodMax)));
+    const penaltyCount = Math.max(0, Math.round(random(penaltyMin, penaltyMax)));
+    
+    const goodTypes = ['LIFE_UP', 'PADDLE_EXPAND', 'BALL_MULTIPLY'];
+    itemPool = [];
+    
+    for (let i = 0; i < goodCount; i++) {
+        itemPool.push(goodTypes[i % goodTypes.length]);
+    }
+    for (let i = 0; i < penaltyCount; i++) {
+        itemPool.push('SLOW_PENALTY');
+    }
+    
+    itemPool = shuffle(itemPool);
+    console.log(`アイテムプール再構築: Good=${goodCount}, Penalty=${penaltyCount}, Level=${level}`);
+}
+
+// プールからアイテムを取得（枯渇時は重み付きランダム）
+function getItemTypeForLevel(level) {
+    if (itemPool.length > 0) {
+        return itemPool.pop();
+    }
+    return getPenaltyWeightedItem(level);
+}
+
+// ペナルティ比率をレベル依存で増やす
+function getPenaltyWeightedItem(level) {
+    const basePenaltyBias = 0.25;
+    const penaltyBias = constrain(basePenaltyBias + 0.08 * (level - 1), 0.25, 0.7);
+    
+    if (random() < penaltyBias) {
+        return 'SLOW_PENALTY';
+    }
+    
+    const goodTypes = ['LIFE_UP', 'PADDLE_EXPAND', 'BALL_MULTIPLY'];
+    return goodTypes[Math.floor(random(goodTypes.length))];
 }
 
 // ゲーム条件チェック
@@ -236,4 +299,53 @@ function optimizePerformance() {
     if (frameCount % 600 === 0) { // 10秒に1回
         blocks = blocks.filter(block => !block.isDestroyed || block.destroyAnimation > 0);
     }
+}
+
+// レベルに応じたボール初速を計算
+function getBallSpeedForLevel(level) {
+    const cfg = difficultyConfig.ball;
+    let speed = cfg.baseSpeed + cfg.speedIncreasePerLevel * (level - 1);
+    return Math.min(speed, cfg.maxSpeed);
+}
+
+// レベルに応じたボールを生成
+function createBallForLevel(level) {
+    const speed = getBallSpeedForLevel(level);
+    const vx = random(-speed, speed);
+    const vy = -Math.max(speed, 4); // 上向きに確実に発射
+    return new Ball(undefined, undefined, vx, vy);
+}
+
+// レベル上昇時の難易度スケーリングを適用
+function applyDifficultyForLevel(level) {
+    // ブロック行数の増加
+    const blockCfg = difficultyConfig.blocks;
+    const addedRows = Math.floor((level - 1) / blockCfg.rowIncreaseInterval);
+    blockLayout.rows = Math.min(blockCfg.baseRows + addedRows, blockCfg.maxRows);
+
+    // 特殊ブロック比率の調整
+    const specialCfg = difficultyConfig.specialBlocks;
+    const ratio = specialCfg.baseRatio + specialCfg.ratioIncreasePerLevel * (level - 1);
+    blockLayout.specialBlockRatio = Math.min(ratio, specialCfg.maxRatio);
+
+    // パドル幅の縮小（一定レベルごと）
+    const paddleCfg = difficultyConfig.paddle;
+    const shrinkSteps = Math.floor((level - 1) / paddleCfg.widthDecreaseInterval);
+    const targetWidth = Math.max(paddleCfg.minWidth, gameConfig.paddle.baseWidth - shrinkSteps * paddleCfg.widthDecrease);
+    gameConfig.paddle.width = targetWidth;
+    gameConfig.paddle.expandedWidth = Math.max(targetWidth * 1.5, targetWidth + 20);
+    
+    // 既存パドルにも反映（レベル開始時のみ呼ばれる想定）
+    if (paddle) {
+        paddle.width = targetWidth;
+        paddle.isExpanded = false;
+        paddle.isSlowed = false;
+        paddle.expandTimer = 0;
+        paddle.slowTimer = 0;
+    }
+    
+    // アイテム出現プール更新
+    prepareItemPoolForLevel(level);
+    
+    console.log(`難易度更新: Level=${level}, Rows=${blockLayout.rows}, SpecialRatio=${blockLayout.specialBlockRatio.toFixed(2)}, PaddleWidth=${targetWidth}`);
 }

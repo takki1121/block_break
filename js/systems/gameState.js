@@ -170,9 +170,11 @@ function initializeGame() {
     gameConfig.player.score = 0;
     gameConfig.player.lives = gameConfig.player.maxLives;
     gameConfig.player.level = 1;
+
+    applyDifficultyForLevel(gameConfig.player.level);
     
     // ゲームオブジェクト生成
-    balls = [new Ball()]; // ボール配列に1個のボールを追加
+    balls = [createBallForLevel(gameConfig.player.level)];
     paddle = new Paddle();
     generateBlocks();
     
@@ -187,11 +189,13 @@ function initializeGame() {
 
 // レベル初期化
 function initializeLevel() {
+    applyDifficultyForLevel(gameConfig.player.level);
+    
     // 新しいブロック配置生成
     generateBlocks();
     
     // ボールリセット（1個に戻す）
-    balls = [new Ball()];
+    balls = [createBallForLevel(gameConfig.player.level)];
     
     // パーティクル・アイテムクリア
     particles = [];
@@ -208,7 +212,7 @@ function loseLife() {
         gameStateManager.changeState(GAME_STATE.GAME_OVER);
     } else {
         // ボールを1個にリセット
-        balls = [new Ball()];
+        balls = [createBallForLevel(gameConfig.player.level)];
         // ライフ減少エフェクト
         createLifeLossEffect();
     }
