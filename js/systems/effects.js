@@ -4,15 +4,30 @@
 // エフェクトシステム初期化
 function initializeEffects() {
     particles = [];
+    particlePool = [];
+}
+
+// パーティクルプール
+let particlePool = [];
+
+function getPooledParticle(x, y, vx, vy, color, life, size) {
+    if (particlePool.length > 0) {
+        const p = particlePool.pop();
+        p.reset(x, y, vx, vy, color, life, size);
+        return p;
+    }
+    return new Particle(x, y, vx, vy, color, life, size);
 }
 
 // パーティクル生成関数
 function createParticle(x, y, vx, vy, color, life, size, type = 'normal') {
-    if (particles.length >= maxParticles) {
-        particles.shift(); // 古いパーティクルを削除
+    if (particles.length >= maxParticles && particlePool.length === 0) {
+        // 古いものをプールに戻して差し替える
+        const recycled = particles.shift();
+        if (recycled) particlePool.push(recycled);
     }
     
-    let particle = new Particle(x, y, vx, vy, color, life, size);
+    let particle = getPooledParticle(x, y, vx, vy, color, life, size);
     particle.type = type;
     particles.push(particle);
 }
@@ -181,6 +196,7 @@ function updateParticles() {
         if (!particle.update()) {
             // ライフが尽きたパーティクルを削除
             particles.splice(i, 1);
+            particlePool.push(particle);
         }
     }
 }

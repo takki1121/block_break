@@ -41,49 +41,58 @@ function checkBallPaddleCollision(ball) {
     }
 }
 
-// ボール vs ブロック衝突判定（改善版）
+// ボール vs ブロック衝突判定（グリッド範囲限定版）
 function checkBallBlockCollisionImproved(ball) {
     let collisionDetected = false;
     
-    for (let i = 0; i < blocks.length && !collisionDetected; i++) {
-        let block = blocks[i];
-        if (block.isDestroyed) continue;
-        
-        let bounds = block.getBounds();
-        
-        // より精密な矩形 vs 円の衝突判定
-        if (isCircleRectCollision(ball.position.x, ball.position.y, ball.radius, bounds)) {
+    // ブロックグリッドが未構築の場合はフォールバック
+    if (!blockGrid || blockGrid.length === 0) {
+        return legacyBallBlockCollision(ball);
+    }
+    
+    const minCol = Math.max(0, Math.floor((ball.position.x - ball.radius - blockOrigin.x) / blockCell.w));
+    const maxCol = Math.min(blockLayout.cols - 1, Math.floor((ball.position.x + ball.radius - blockOrigin.x) / blockCell.w));
+    const minRow = Math.max(0, Math.floor((ball.position.y - ball.radius - blockOrigin.y) / blockCell.h));
+    const maxRow = Math.min(blockLayout.rows - 1, Math.floor((ball.position.y + ball.radius - blockOrigin.y) / blockCell.h));
+    
+    for (let row = minRow; row <= maxRow && !collisionDetected; row++) {
+        if (!blockGrid[row]) continue;
+        for (let col = minCol; col <= maxCol && !collisionDetected; col++) {
+            const block = blockGrid[row][col];
+            if (!block || block.isDestroyed) continue;
             
-            // 衝突面の正確な判定
-            let collision = getCollisionSide(ball.position.x, ball.position.y, ball.radius, bounds);
+            const bounds = block.getBounds();
+            if (!isCircleRectCollision(ball.position.x, ball.position.y, ball.radius, bounds)) continue;
             
-            // 反射処理
+            const collision = getCollisionSide(ball.position.x, ball.position.y, ball.radius, bounds);
+            
             if (collision.horizontal) {
                 ball.velocity.vx = -ball.velocity.vx;
-                // ボール位置補正
-                if (collision.side === 'left') {
-                    ball.position.x = bounds.left - ball.radius;
-                } else if (collision.side === 'right') {
-                    ball.position.x = bounds.right + ball.radius;
-                }
+                ball.position.x = collision.side === 'left' ? bounds.left - ball.radius : bounds.right + ball.radius;
             }
-            
             if (collision.vertical) {
                 ball.velocity.vy = -ball.velocity.vy;
-                // ボール位置補正
-                if (collision.side === 'top') {
-                    ball.position.y = bounds.top - ball.radius;
-                } else if (collision.side === 'bottom') {
-                    ball.position.y = bounds.bottom + ball.radius;
-                }
+                ball.position.y = collision.side === 'top' ? bounds.top - ball.radius : bounds.bottom + ball.radius;
             }
             
-            // ブロック破壊処理
             if (block.destroy()) {
-                console.log("ブロック破壊 - スコア:", gameConfig.player.score);
-                collisionDetected = true; // 重要: 一度に一つのブロックのみ処理
+                collisionDetected = true; // 一度に一つのブロックのみ
             }
         }
+    }
+}
+
+// 全探索フォールバック（グリッド未生成時のみ使用）
+function legacyBallBlockCollision(ball) {
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+        if (block.isDestroyed) continue;
+        const bounds = block.getBounds();
+        if (!isCircleRectCollision(ball.position.x, ball.position.y, ball.radius, bounds)) continue;
+        const collision = getCollisionSide(ball.position.x, ball.position.y, ball.radius, bounds);
+        if (collision.horizontal) ball.velocity.vx = -ball.velocity.vx;
+        if (collision.vertical) ball.velocity.vy = -ball.velocity.vy;
+        if (block.destroy()) break;
     }
 }
 

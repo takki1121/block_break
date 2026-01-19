@@ -3,6 +3,11 @@
 
 class Particle {
     constructor(x, y, vx, vy, color, life = 60, size = 3) {
+        this.reset(x, y, vx, vy, color, life, size);
+    }
+
+    // プール再利用時に初期化
+    reset(x, y, vx, vy, color, life = 60, size = 3) {
         this.position = { x, y };
         this.velocity = { vx: vx || random(-2, 2), vy: vy || random(-2, 2) };
         this.color = color || [255, 255, 255];

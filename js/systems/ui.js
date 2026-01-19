@@ -245,10 +245,16 @@ function drawGameObjects() {
     blocks.forEach(block => block.draw());
     
     // アイテム描画
-    items.forEach(item => item.draw());
+    items.forEach(item => {
+        if (item.position.y > height + 40) return; // 画面外はスキップ
+        item.draw();
+    });
     
     // パーティクル描画
-    particles.forEach(particle => particle.draw());
+    particles.forEach(particle => {
+        if (particle.position.y > height + 60 || particle.position.y < -80) return;
+        particle.draw();
+    });
     
     // パドル描画
     if (paddle) paddle.draw();
