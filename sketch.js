@@ -1,8 +1,8 @@
 // ブロック崩しゲーム - メインファイル
 // p5.jsのメイン関数のみを定義
 
-// デバッグモード（開発時のみ有効）
-// const DEBUG_MODE = true;
+// デバッグモード（キーDで切り替え）
+let DEBUG_MODE = false;
 
 // p5.js preload関数 - アセット読み込み
 function preload() {
@@ -11,24 +11,10 @@ function preload() {
     
     // アイテム画像を読み込み
     try {
-        itemImages.hp = loadImage('img/hp.png', 
-            () => console.log("HP画像読み込み成功"),
-            () => console.error("HP画像読み込み失敗")
-        );
-        itemImages.shield = loadImage('img/shield.png',
-            () => console.log("Shield画像読み込み成功"),
-            () => console.error("Shield画像読み込み失敗")
-        );
-        itemImages.ball = loadImage('img/ball.png',
-            () => console.log("Ball画像読み込み成功"),
-            () => console.error("Ball画像読み込み失敗")
-        );
-        itemImages.skull = loadImage('img/skull.png',
-            () => console.log("Skull画像読み込み成功"),
-            () => console.error("Skull画像読み込み失敗")
-        );
-        
-        console.log("アイテム画像読み込み開始");
+        itemImages.hp = loadImage('img/hp.png', null, () => console.error("HP画像読み込み失敗"));
+        itemImages.shield = loadImage('img/shield.png', null, () => console.error("Shield画像読み込み失敗"));
+        itemImages.ball = loadImage('img/ball.png', null, () => console.error("Ball画像読み込み失敗"));
+        itemImages.skull = loadImage('img/skull.png', null, () => console.error("Skull画像読み込み失敗"));
     } catch (error) {
         console.error("画像読み込み中にエラー:", error);
     }
@@ -69,13 +55,7 @@ function setup() {
     audioSystem.checkLoadStatus();
     
     // 画像読み込み確認
-    console.log("アイテム画像読み込み状況:");
-    console.log("HP:", itemImages.hp ? "OK" : "NG");
-    console.log("Shield:", itemImages.shield ? "OK" : "NG");
-    console.log("Ball:", itemImages.ball ? "OK" : "NG");
-    console.log("Skull:", itemImages.skull ? "OK" : "NG");
-    
-    console.log("ゲーム初期化完了");
+    // 画像読み込み状況はコンソール出力を行わずに内部で保持
 }
 
 // p5.js draw関数 - メインゲームループ
@@ -216,7 +196,7 @@ function resizeGameElements() {
     // ゲーム要素の位置とサイズを更新
     updateGameElementsScale(scaleFactor);
     
-    console.log(`Canvas resized to: ${newWidth}x${newHeight}, Scale: ${scaleFactor.toFixed(2)}, Smartphone: ${isSmartphone}`);
+    // レイアウト調整時のログ出力は行わない
 }
 
 // ゲーム要素のスケール更新関数
@@ -297,18 +277,13 @@ function windowResized() {
 
 // p5.js エラーハンドリング
 window.onerror = function(message, source, lineno, colno, error) {
-    console.error('ゲームエラー:', {
-        message: message,
-        source: source,
-        line: lineno,
-        column: colno,
-        error: error
-    });
-    
-    // エラー時の緊急停止防止
-    if (typeof currentState !== 'undefined') {
-        console.log('現在の状態:', currentState);
-    }
+        console.error('ゲームエラー:', {
+            message: message,
+            source: source,
+            line: lineno,
+            column: colno,
+            error: error
+        });
     
     return false; // デフォルトのエラーハンドリングも実行
 };

@@ -108,7 +108,6 @@ class Block {
             // スコア加算（改善版）
             let blockType = this.isSpecial ? 'special' : 'normal';
             let earnedScore = scoreSystem.onBlockDestroy(blockType);
-            console.log("ブロック破壊スコア:", earnedScore, "総スコア:", gameConfig.player.score);
             
             // 特殊ブロックならアイテム生成
             if (this.isSpecial && this.itemType) {
@@ -123,7 +122,7 @@ class Block {
     // アイテム生成
     spawnItem() {
         // デバッグ情報
-        console.log("特殊ブロック破壊 - アイテムタイプ:", this.itemType);
+        // 特殊ブロック破壊ログは出力しない
         
         // テスト用：アイテムを必ず生成（確率を100%に設定）
         let shouldSpawn = true;
@@ -138,7 +137,7 @@ class Block {
         } else {
             shouldSpawn = spawnChance < 75; // 良いアイテムは75%で出現
         }
-        console.log("アイテム生成判定:", shouldSpawn, "確率:", spawnChance);
+            // アイテム生成確率ログは省略
         */
         
         if (shouldSpawn) {
@@ -148,9 +147,8 @@ class Block {
                 this.itemType
             );
             items.push(item);
-            console.log("アイテム生成成功:", this.itemType, "アイテム総数:", items.length);
         } else {
-            console.log("アイテム生成失敗 - 確率により不出現");
+            // アイテムが出現しなかった場合もログは出さない
         }
     }
     

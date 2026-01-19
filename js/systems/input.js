@@ -146,6 +146,11 @@ function keyPressed() {
     if (key === ' ' || keyCode === 32) {
         handleGameInput();
     }
+
+    // デバッグモード切り替え
+    if (key === 'd' || key === 'D') {
+        DEBUG_MODE = !DEBUG_MODE;
+    }
     
     return false;
 }

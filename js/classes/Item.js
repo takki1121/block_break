@@ -211,7 +211,6 @@ class Item {
                 // ボール増殖実装
                 multiplyBalls();
                 gameConfig.player.score += 100; // ボーナススコア
-                console.log("ボール増殖アイテム取得！現在のボール数:", balls.length);
                 break;
             case 'SLOW_PENALTY':
                 paddle.slowPaddle();

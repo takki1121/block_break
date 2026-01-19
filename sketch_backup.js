@@ -109,7 +109,6 @@ const gameStateManager = {
             timestamp: Date.now(),
             gameTime: millis()
         });
-        console.log(`状態遷移: ${fromState} → ${toState} (${millis()}ms)`);
     },
     
     // 状態変更（視覚効果追加 - フェーズ7）
@@ -182,9 +181,6 @@ function setup() {
     // フォント設定
     textFont('Delius');
     
-    console.log("ブロック崩しゲーム初期化完了");
-    console.log("キャンバスサイズ:", gameConfig.canvas.width, "x", gameConfig.canvas.height);
-    console.log("ハイスコア:", highScore);
 }
 
 // p5.js draw関数 - メインゲームループ
@@ -426,7 +422,6 @@ function updateItems() {
         
         // パドルとの衝突判定
         if (items[i].checkPaddleCollision(paddle)) {
-            console.log("アイテム取得:", items[i].type);
             items.splice(i, 1);
             continue;
         }
@@ -553,7 +548,6 @@ function checkBallBlockCollisionImproved() {
             
             // ブロック破壊処理
             if (block.destroy()) {
-                console.log("ブロック破壊 - スコア:", gameConfig.player.score);
                 collisionDetected = true; // 重要: 一度に一つのブロックのみ処理
             }
         }
@@ -626,13 +620,8 @@ function onLevelClear() {
     // レベルクリアスコア（改善版）
     let earnedScore = scoreSystem.onLevelClear();
     
-    console.log("レベルクリア! レベル", gameConfig.player.level, "獲得スコア:", earnedScore, "総スコア:", gameConfig.player.score);
-    
     // ハイスコア更新チェック
     let isNewRecord = updateHighScore();
-    if (isNewRecord) {
-        console.log("新ハイスコア達成!");
-    }
     
     gameStateManager.changeState(GAME_STATE.LEVEL_CLEAR);
 }
@@ -646,8 +635,6 @@ function checkGameOverCondition() {
 
 // ゲームオーバー処理
 function onGameOver() {
-    console.log("ゲームオーバー - 最終スコア:", gameConfig.player.score);
-    
     // ハイスコア更新チェック
     updateHighScore();
     
@@ -657,7 +644,6 @@ function onGameOver() {
 // ライフ減少処理
 function loseLife() {
     gameConfig.player.lives--;
-    console.log("ライフ減少 - 残り:", gameConfig.player.lives);
     
     if (gameConfig.player.lives <= 0) {
         onGameOver();
@@ -1146,7 +1132,6 @@ function resetGame() {
     gameConfig.player.score = 0;
     gameConfig.player.level = 1;
     gameStarted = false;
-    console.log("ゲームリセット完了");
 }
 
 // ゲーム初期化
@@ -1158,8 +1143,6 @@ function initializeGame() {
     
     // ブロック生成
     generateBlocks();
-    
-    console.log("ゲーム初期化完了 - レベル", gameConfig.player.level);
 }
 
 // レベル初期化（レベルアップ時）
@@ -1178,8 +1161,6 @@ function initializeLevel() {
     
     // 新しいブロック生成
     generateBlocks();
-    
-    console.log("レベル", gameConfig.player.level, "初期化完了");
 }
 
 // 補助描画関数群
@@ -1367,7 +1348,6 @@ function loadHighScore() {
 // ハイスコア保存
 function saveHighScore() {
     localStorage.setItem('blockBreakerHighScore', highScore.toString());
-    console.log("ハイスコア保存:", highScore);
 }
 
 // ハイスコア更新
@@ -1376,7 +1356,6 @@ function updateHighScore() {
         let oldHighScore = highScore;
         highScore = gameConfig.player.score;
         saveHighScore();
-        console.log("新ハイスコア!", oldHighScore, "→", highScore);
         return true; // 新記録
     }
     return false;
@@ -1436,7 +1415,6 @@ function initializeInputSystem() {
     // タッチデバイス検出
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
         inputSystem.isTouch = true;
-        console.log("タッチデバイス検出");
     }
 }
 
@@ -1458,8 +1436,6 @@ function updateCanvasScale() {
     if (canvas) {
         resizeCanvas(newWidth, newHeight);
     }
-    
-    console.log("キャンバススケール更新:", gameConfig.canvas.scaleFactor);
 }
 
 // ウィンドウリサイズ処理
@@ -1976,7 +1952,6 @@ class Block {
             // スコア加算（改善版）
             let blockType = this.isSpecial ? 'special' : 'normal';
             let earnedScore = scoreSystem.onBlockDestroy(blockType);
-            console.log("ブロック破壊スコア:", earnedScore, "総スコア:", gameConfig.player.score);
             
             // 特殊ブロックならアイテム生成
             if (this.isSpecial && this.itemType) {

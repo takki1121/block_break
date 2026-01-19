@@ -219,6 +219,11 @@ function drawGame() {
     
     // ゲームオブジェクト描画
     drawGameObjects();
+
+    // デバッグ可視化（衝突範囲など）
+    if (DEBUG_MODE) {
+        drawCollisionDebug();
+    }
     
     // HUD描画
     drawHUD();
@@ -261,6 +266,36 @@ function drawGameObjects() {
     
     // すべてのボール描画
     balls.forEach(ball => ball.draw());
+}
+
+// 衝突判定範囲の可視化
+function drawCollisionDebug() {
+    push();
+    noFill();
+    strokeWeight(1);
+    
+    // パドル境界
+    if (paddle) {
+        stroke(0, 255, 0, 180);
+        const pb = paddle.getBounds();
+        rect(pb.left, pb.top, pb.right - pb.left, pb.bottom - pb.top);
+    }
+    
+    // ブロック境界
+    stroke(255, 255, 0, 120);
+    blocks.forEach(block => {
+        if (block.isDestroyed) return;
+        const b = block.getBounds();
+        rect(b.left, b.top, b.right - b.left, b.bottom - b.top);
+    });
+    
+    // ボールとアイテム
+    stroke(0, 150, 255, 160);
+    balls.forEach(ball => ellipse(ball.position.x, ball.position.y, ball.radius * 2));
+    stroke(255, 100, 255, 160);
+    items.forEach(item => ellipse(item.position.x, item.position.y, 18));
+    
+    pop();
 }
 
 // HUD描画

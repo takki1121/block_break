@@ -25,12 +25,10 @@ const audioSystem = {
      * p5.jsのpreload()関数から呼び出される
      */
     preload() {
-        console.log('音声ファイルの読み込みを開始...');
-        
         for (let soundName in this.soundFiles) {
             try {
-                this.sounds[soundName] = loadSound(this.soundFiles[soundName]);
-                console.log(`音声読み込み成功: ${soundName}`);
+                this.sounds[soundName] = loadSound(this.soundFiles[soundName]); // 音声読み込み
+                // 音声読み込み成功ログは省略
             } catch (error) {
                 console.warn(`音声ファイルの読み込みに失敗: ${this.soundFiles[soundName]}`);
                 this.sounds[soundName] = null;
@@ -71,7 +69,7 @@ const audioSystem = {
      */
     toggleMute() {
         this.isMuted = !this.isMuted;
-        console.log(`音声: ${this.isMuted ? 'OFF' : 'ON'}`);
+        // 音声状態ログは省略
         
         // ミュート時は全音声停止
         if (this.isMuted) {
@@ -96,9 +94,7 @@ const audioSystem = {
     initialize() {
         this.loadAudioSettings(); // 保存された設定を読み込み
         this.isLoaded = true;
-        console.log('音響システム初期化完了');
-        console.log('読み込み済み音声:', Object.keys(this.sounds));
-        console.log('音声設定:', { isMuted: this.isMuted, masterVolume: this.masterVolume });
+        // 初期化完了ログは省略
     },
     
     /**
@@ -116,7 +112,7 @@ const audioSystem = {
             }
         }
         
-        console.log('読み込み成功:', loadedSounds);
+        // 読み込み成功ログは省略
         if (failedSounds.length > 0) {
             console.warn('読み込み失敗:', failedSounds);
         }
@@ -144,7 +140,7 @@ const audioSystem = {
     setMasterVolume(volume) {
         this.masterVolume = Math.max(0, Math.min(1, volume));
         this.saveAudioSettings();
-        console.log(`マスター音量設定: ${this.masterVolume}`);
+        // マスター音量設定ログは省略
     },
 
     /**
@@ -165,7 +161,7 @@ const audioSystem = {
             this.stopAllSounds();
         }
         this.saveAudioSettings();
-        console.log(`音声: ${this.isMuted ? 'OFF' : 'ON'}`);
+        // 音声状態ログは省略
     },
 
     /**
@@ -193,7 +189,7 @@ const audioSystem = {
                 const parsed = JSON.parse(settings);
                 this.isMuted = parsed.isMuted || false;
                 this.masterVolume = parsed.masterVolume !== undefined ? parsed.masterVolume : 0.7;
-                console.log('音声設定を読み込みました:', { isMuted: this.isMuted, masterVolume: this.masterVolume });
+                // 音声設定読込ログは省略
             }
         } catch (error) {
             console.warn('音声設定の読み込みに失敗:', error);

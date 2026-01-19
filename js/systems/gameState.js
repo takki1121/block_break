@@ -57,7 +57,6 @@ const gameStateManager = {
             timestamp: Date.now(),
             gameTime: millis()
         });
-        console.log(`状態遷移: ${fromState} → ${toState} (${millis()}ms)`);
     },
     
     // 状態変更（視覚効果追加 - フェーズ7）
@@ -201,7 +200,7 @@ function initializeLevel() {
     particles = [];
     items = [];
     
-    console.log("レベル", gameConfig.player.level, "開始");
+    // レベル開始ログは出力しない
 }
 
 // ライフ減少処理
@@ -234,7 +233,7 @@ function checkLevelClear() {
         // レベルクリアエフェクト
         createLevelClearEffect();
         
-        console.log("レベルクリア！ボーナス:", bonus);
+        // レベルクリア時のログ出力は省略
         
         // 一定時間後に次のレベルに移行
         setTimeout(() => {

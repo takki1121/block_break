@@ -37,7 +37,6 @@ function generateBlocks() {
             
             if (isSpecial) {
                 itemType = getItemTypeForLevel(gameConfig.player.level);
-                console.log("特殊ブロック生成:", "位置(" + col + "," + row + ")", "アイテム:", itemType);
             }
             
             const newBlock = new Block(x, y, blockColor, isSpecial, itemType);
@@ -49,7 +48,7 @@ function generateBlocks() {
     
     // ブロック生成統計
     let specialBlocks = blocks.filter(block => block.isSpecial).length;
-    console.log("ブロック生成完了:", "総数:", blocks.length, "特殊ブロック:", specialBlocks);
+    // 生成統計のコンソール出力は省略
 }
 
 // レベルに応じたアイテムプールを組み立て
@@ -74,7 +73,7 @@ function prepareItemPoolForLevel(level) {
     }
     
     itemPool = shuffle(itemPool);
-    console.log(`アイテムプール再構築: Good=${goodCount}, Penalty=${penaltyCount}, Level=${level}`);
+    // プール再構築の詳細ログは出力しない
 }
 
 // プールからアイテムを取得（枯渇時は重み付きランダム）
@@ -118,7 +117,6 @@ function checkLevelClearCondition() {
         gameStateManager.changeState(GAME_STATE.LEVEL_CLEAR);
         createLevelClearEffect();
         
-        console.log("レベルクリア！ボーナス:", bonus);
         
         // 2秒後に次のレベルに移行
         setTimeout(() => {
@@ -133,7 +131,7 @@ function checkLevelClearCondition() {
 function checkGameOverCondition() {
     if (gameConfig.player.lives <= 0 && currentState === GAME_STATE.PLAYING) {
         gameStateManager.changeState(GAME_STATE.GAME_OVER);
-        console.log("ゲームオーバー - 最終スコア:", gameConfig.player.score);
+        // ゲームオーバー時のコンソール出力は省略
     }
 }
 
@@ -147,7 +145,7 @@ function resetGame() {
     // ゲームオブジェクト初期化
     initializeGame();
     
-    console.log("ゲームリセット完了");
+    // リセット時のコンソール出力は省略
 }
 
 // ゲーム更新メイン関数
@@ -194,7 +192,6 @@ function updateItems() {
         
         // パドルとの衝突判定
         if (item.checkPaddleCollision(paddle)) {
-            console.log("アイテム取得:", item.type);
         }
         
         // 収集済みアイテムを削除
@@ -221,11 +218,12 @@ function drawDebugInfo() {
     text("ブロック数: " + blocks.filter(b => !b.isDestroyed).length + "/" + blocks.length, 15, debugY + 30);
     text("アイテム数: " + items.length, 15, debugY + 45);
     text("パーティクル数: " + particles.length + "/" + maxParticles, 15, debugY + 60);
+    text("ボール数: " + balls.length, 15, debugY + 75);
     
     // プレイヤー情報
-    text("スコア: " + gameConfig.player.score, 15, debugY + 75);
-    text("レベル: " + gameConfig.player.level, 15, debugY + 90);
-    text("残機: " + gameConfig.player.lives, 15, debugY + 105);
+    text("スコア: " + gameConfig.player.score, 15, debugY + 90);
+    text("レベル: " + gameConfig.player.level, 15, debugY + 105);
+    text("残機: " + gameConfig.player.lives, 15, debugY + 120);
     
     // 入力情報
     if (inputSystem) {
@@ -268,13 +266,10 @@ function multiplyBalls() {
         );
         
         balls.push(newBall);
-        console.log("新しいボール追加:", balls.length);
     });
     
     // 最大数に達した場合の警告
-    if (balls.length >= maxBalls) {
-        console.log("ボール数が最大に達しました:", maxBalls);
-    }
+    // 最大数に達した場合もコンソール出力しない
 }
 
 // パフォーマンス最適化チェック
@@ -292,7 +287,6 @@ function optimizePerformance() {
     // ボール数制限
     if (balls.length > 10) {
         balls.splice(10); // 10個以上は削除
-        console.log("ボール数を制限しました:", balls.length);
     }
     
     // 破壊済みブロックのクリーンアップ（メモリリーク防止）
@@ -347,5 +341,5 @@ function applyDifficultyForLevel(level) {
     // アイテム出現プール更新
     prepareItemPoolForLevel(level);
     
-    console.log(`難易度更新: Level=${level}, Rows=${blockLayout.rows}, SpecialRatio=${blockLayout.specialBlockRatio.toFixed(2)}, PaddleWidth=${targetWidth}`);
+    // 難易度更新ログは出力しない
 }
