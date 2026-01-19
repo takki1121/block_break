@@ -30,11 +30,17 @@ function initializeUI() {
 function updateUIScale() {
     const scaleFactor = gameConfig.canvas.scaleFactor;
     
-    // ポーズボタンのスケール更新
+    // ライフ・レベルパネルのサイズを計算
+    const livesLevelPanelWidth = getScaledValue(120);
+    const livesLevelPanelHeight = getScaledValue(50);
+    const margin = getScaledValue(10);
+    
+    // ポーズボタンのスケール更新（ライフ・レベル表示と同じY座標、右端揃え）
     uiSystem.pauseButton.width = getScaledValue(uiConfig.pauseButton.width);
     uiSystem.pauseButton.height = getScaledValue(uiConfig.pauseButton.height);
-    uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - getScaledValue(uiConfig.pauseButton.margin);
-    uiSystem.pauseButton.y = getScaledValue(uiConfig.pauseButton.margin);
+    // 右端から margin 分の位置に配置、Y座標はレベル表示と同じ
+    uiSystem.pauseButton.x = width - uiSystem.pauseButton.width - margin;
+    uiSystem.pauseButton.y = margin;
     
     // ミュートボタンのスケール更新
     uiSystem.muteButton.width = getScaledValue(uiConfig.muteButton.width);
@@ -358,20 +364,20 @@ function drawPauseButton() {
     fill(255, 255, 255);
     noStroke();
     
-    // ボタンの中心座標を計算
-    let centerX = btn.x + btn.width / 2;
-    let centerY = btn.y + btn.height / 2;
+    // ボタンの中心座標を直接計算
+    let centerX = btn.x + btn.width * 0.5-getScaledValue(60);
+    let centerY = btn.y + btn.height * 0.5-getScaledValue(15);
     
-    // 線の幅と高さを定義（スケール対応）
+    // 線の幅と高さを定義（固定値でスケール対応）
     let lineWidth = getScaledValue(3);
     let lineHeight = getScaledValue(12);
-    let lineSpacing = getScaledValue(4); // 二本の線の間隔
+    let gap = getScaledValue(3); // 2本の線の間のギャップ
     
-    // 左の縦線（中央から左に配置）
-    rect(centerX - lineSpacing/2 - lineWidth, centerY - lineHeight/2, lineWidth, lineHeight);
+    // 左の縦線
+    rect(centerX - gap - lineWidth, centerY - lineHeight/2, lineWidth, lineHeight, getScaledValue(1));
     
-    // 右の縦線（中央から右に配置）
-    rect(centerX + lineSpacing/2, centerY - lineHeight/2, lineWidth, lineHeight);
+    // 右の縦線
+    rect(centerX + gap, centerY - lineHeight/2, lineWidth, lineHeight, getScaledValue(1));
 }
 
 // ミュートボタン
