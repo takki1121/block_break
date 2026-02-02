@@ -58,36 +58,59 @@ class Block {
         pop();
     }
     
-    // 特殊ブロックの模様描画
+    // 特殊ブロックの模様描画（アイテム画像を表示）
     drawSpecialPattern() {
         let centerX = this.width / 2;
         let centerY = this.height / 2;
         
-        fill(255, 255, 255, 150);
-        noStroke();
+        // アイテム画像を取得
+        let imageName = this.getItemImageName();
         
+        // 画像が読み込まれている場合は画像を表示
+        if (itemImages && itemImages[imageName]) {
+            imageMode(CENTER);
+            tint(255, 200); // 半透明で表示
+            image(itemImages[imageName], centerX, centerY, 16, 16);
+            noTint();
+        } else {
+            // 画像が読み込まれていない場合はフォールバック（図形）
+            fill(255, 255, 255, 150);
+            noStroke();
+            
+            switch(this.itemType) {
+                case 'LIFE_UP':
+                    // ハート模様
+                    drawHeart(centerX, centerY, 8);
+                    break;
+                case 'PADDLE_EXPAND':
+                    // 盾模様
+                    ellipse(centerX, centerY, 12);
+                    fill(this.color);
+                    ellipse(centerX, centerY, 8);
+                    break;
+                case 'BALL_MULTIPLY':
+                    // 複数ボール模様
+                    ellipse(centerX - 3, centerY, 4);
+                    ellipse(centerX + 3, centerY, 4);
+                    ellipse(centerX, centerY - 3, 4);
+                    break;
+                case 'SLOW_PENALTY':
+                    // 骸骨模様
+                    fill(255, 100, 100, 150);
+                    rect(centerX - 4, centerY - 2, 8, 4);
+                    break;
+            }
+        }
+    }
+    
+    // アイテム画像名を取得
+    getItemImageName() {
         switch(this.itemType) {
-            case 'LIFE_UP':
-                // ハート模様
-                drawHeart(centerX, centerY, 8);
-                break;
-            case 'PADDLE_EXPAND':
-                // 盾模様
-                ellipse(centerX, centerY, 12);
-                fill(this.color);
-                ellipse(centerX, centerY, 8);
-                break;
-            case 'BALL_MULTIPLY':
-                // 複数ボール模様
-                ellipse(centerX - 3, centerY, 4);
-                ellipse(centerX + 3, centerY, 4);
-                ellipse(centerX, centerY - 3, 4);
-                break;
-            case 'SLOW_PENALTY':
-                // 骸骨模様
-                fill(255, 100, 100, 150);
-                rect(centerX - 4, centerY - 2, 8, 4);
-                break;
+            case 'LIFE_UP': return 'hp';
+            case 'PADDLE_EXPAND': return 'shield';
+            case 'BALL_MULTIPLY': return 'ball';
+            case 'SLOW_PENALTY': return 'skull';
+            default: return '';
         }
     }
     
