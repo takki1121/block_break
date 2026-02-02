@@ -199,8 +199,6 @@ function initializeLevel() {
     // パーティクル・アイテムクリア
     particles = [];
     items = [];
-    
-    // レベル開始ログは出力しない
 }
 
 // ライフ減少処理
@@ -232,8 +230,6 @@ function checkLevelClear() {
         
         // レベルクリアエフェクト
         createLevelClearEffect();
-        
-        // レベルクリア時のログ出力は省略
         
         // 一定時間後に次のレベルに移行
         setTimeout(() => {

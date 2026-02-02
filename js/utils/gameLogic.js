@@ -45,10 +45,6 @@ function generateBlocks() {
             blockGrid[row][col] = newBlock;
         }
     }
-    
-    // ブロック生成統計
-    let specialBlocks = blocks.filter(block => block.isSpecial).length;
-    // 生成統計のコンソール出力は省略
 }
 
 // レベルに応じたアイテムプールを組み立て
@@ -73,7 +69,6 @@ function prepareItemPoolForLevel(level) {
     }
     
     itemPool = shuffle(itemPool);
-    // プール再構築の詳細ログは出力しない
 }
 
 // プールからアイテムを取得（枯渇時は重み付きランダム）
@@ -144,8 +139,6 @@ function resetGame() {
     
     // ゲームオブジェクト初期化
     initializeGame();
-    
-    // リセット時のコンソール出力は省略
 }
 
 // ゲーム更新メイン関数
@@ -268,8 +261,6 @@ function multiplyBalls() {
         balls.push(newBall);
     });
     
-    // 最大数に達した場合の警告
-    // 最大数に達した場合もコンソール出力しない
 }
 
 // パフォーマンス最適化チェック
@@ -340,6 +331,4 @@ function applyDifficultyForLevel(level) {
     
     // アイテム出現プール更新
     prepareItemPoolForLevel(level);
-    
-    // 難易度更新ログは出力しない
 }

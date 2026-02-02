@@ -27,8 +27,7 @@ const audioSystem = {
     preload() {
         for (let soundName in this.soundFiles) {
             try {
-                this.sounds[soundName] = loadSound(this.soundFiles[soundName]); // 音声読み込み
-                // 音声読み込み成功ログは省略
+                this.sounds[soundName] = loadSound(this.soundFiles[soundName]);
             } catch (error) {
                 console.warn(`音声ファイルの読み込みに失敗: ${this.soundFiles[soundName]}`);
                 this.sounds[soundName] = null;
@@ -69,7 +68,6 @@ const audioSystem = {
      */
     toggleMute() {
         this.isMuted = !this.isMuted;
-        // 音声状態ログは省略
         
         // ミュート時は全音声停止
         if (this.isMuted) {
@@ -92,9 +90,8 @@ const audioSystem = {
      * 音響システムの初期化完了チェック
      */
     initialize() {
-        this.loadAudioSettings(); // 保存された設定を読み込み
+        this.loadAudioSettings();
         this.isLoaded = true;
-        // 初期化完了ログは省略
     },
     
     /**
@@ -112,7 +109,6 @@ const audioSystem = {
             }
         }
         
-        // 読み込み成功ログは省略
         if (failedSounds.length > 0) {
             console.warn('読み込み失敗:', failedSounds);
         }
@@ -140,7 +136,6 @@ const audioSystem = {
     setMasterVolume(volume) {
         this.masterVolume = Math.max(0, Math.min(1, volume));
         this.saveAudioSettings();
-        // マスター音量設定ログは省略
     },
 
     /**
@@ -161,7 +156,6 @@ const audioSystem = {
             this.stopAllSounds();
         }
         this.saveAudioSettings();
-        // 音声状態ログは省略
     },
 
     /**
@@ -189,7 +183,6 @@ const audioSystem = {
                 const parsed = JSON.parse(settings);
                 this.isMuted = parsed.isMuted || false;
                 this.masterVolume = parsed.masterVolume !== undefined ? parsed.masterVolume : 0.7;
-                // 音声設定読込ログは省略
             }
         } catch (error) {
             console.warn('音声設定の読み込みに失敗:', error);

@@ -53,9 +53,6 @@ function setup() {
     // 音響システムの初期化
     audioSystem.initialize();
     audioSystem.checkLoadStatus();
-    
-    // 画像読み込み確認
-    // 画像読み込み状況はコンソール出力を行わずに内部で保持
 }
 
 // p5.js draw関数 - メインゲームループ

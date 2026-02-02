@@ -144,14 +144,6 @@ class Block {
     
     // アイテム生成
     spawnItem() {
-        // デバッグ情報
-        // 特殊ブロック破壊ログは出力しない
-        
-        // テスト用：アイテムを必ず生成（確率を100%に設定）
-        let shouldSpawn = true;
-        
-        // 本来の確率システム（デバッグ後に使用）
-        /*
         let spawnChance = random(100);
         let shouldSpawn = false;
         
@@ -160,8 +152,6 @@ class Block {
         } else {
             shouldSpawn = spawnChance < 75; // 良いアイテムは75%で出現
         }
-            // アイテム生成確率ログは省略
-        */
         
         if (shouldSpawn) {
             let item = new Item(
@@ -170,8 +160,6 @@ class Block {
                 this.itemType
             );
             items.push(item);
-        } else {
-            // アイテムが出現しなかった場合もログは出さない
         }
     }
     
