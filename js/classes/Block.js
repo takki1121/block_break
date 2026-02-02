@@ -1,7 +1,23 @@
 // Block クラス - ブロック管理
 // ブロックの描画、破壊アニメーション、アイテム生成を処理
 
+/**
+ * ブロッククラス
+ * 破壊可能なブロックオブジェクトを管理
+ * 
+ * @class
+ * @description ブロックの描画、破壊アニメーション、
+ * アイテム生成ロジックを処理
+ */
 class Block {
+    /**
+     * Blockコンストラクタ
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {p5.Color} color - ブロックの色
+     * @param {boolean} [isSpecial=false] - 特殊ブロックフラグ
+     * @param {string|null} [itemType=null] - アイテムタイプ ('LIFE_UP', 'PADDLE_EXPAND', 'BALL_MULTIPLY', 'SLOW_PENALTY')
+     */
     constructor(x, y, color, isSpecial = false, itemType = null) {
         this.position = { x, y };
         this.width = blockLayout.width;
@@ -142,6 +158,12 @@ class Block {
         return false;
     }
     
+    /**
+     * アイテム生成処理
+     * @description 特殊ブロック破壊時、確率に基づいてアイテムを生成
+     * ペナルティアイテムは80%、良いアイテムは75%の確率で出現
+     * @private
+     */
     // アイテム生成
     spawnItem() {
         let spawnChance = random(100);

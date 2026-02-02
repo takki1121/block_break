@@ -1,7 +1,25 @@
 // Particle クラス - パーティクル管理
 // パーティクルシステムによる視覚効果を処理
 
+/**
+ * パーティクルクラス
+ * 視覚エフェクト用のパーティクルを管理
+ * 
+ * @class
+ * @description オブジェクトプーリングをサポートし、
+ * 4種類の描画タイプ（normal, explosion, sparkle, trail）を提供
+ */
 class Particle {
+    /**
+     * Particleコンストラクタ
+     * @param {number} x - 初期X座標
+     * @param {number} y - 初期Y座標
+     * @param {number} vx - X方向速度
+     * @param {number} vy - Y方向速度
+     * @param {number[]} color - RGB配列 [r, g, b]
+     * @param {number} [life=60] - ライフタイム（フレーム数）
+     * @param {number} [size=3] - パーティクルサイズ（ピクセル）
+     */
     constructor(x, y, vx, vy, color, life = 60, size = 3) {
         this.reset(x, y, vx, vy, color, life, size);
     }

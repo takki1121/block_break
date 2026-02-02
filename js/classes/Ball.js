@@ -1,7 +1,22 @@
 // Ball クラス - ボール管理
 // ボールの位置、速度、描画、衝突判定を管理
 
+/**
+ * ボールクラス
+ * ゲーム内のボールオブジェクトを管理
+ * 
+ * @class
+ * @description 位置、速度、残像エフェクトを管理し、
+ * 壁との衝突判定と反射処理を行う
+ */
 class Ball {
+    /**
+     * Ballコンストラクタ
+     * @param {number} [x=width/2] - 初期X座標
+     * @param {number} [y=height-100] - 初期Y座標
+     * @param {number} [vx=5] - 初期X方向速度
+     * @param {number} [vy=-5] - 初期Y方向速度
+     */
     constructor(x, y, vx, vy) {
         this.position = { x: x || width/2, y: y || height - 100 };
         this.velocity = { vx: vx || 5, vy: vy || -5 };

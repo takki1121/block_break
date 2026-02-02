@@ -1,7 +1,20 @@
 // Paddle クラス - パドル管理
 // パドルの位置、入力処理、描画、効果管理を処理
 
+/**
+ * パドルクラス
+ * プレイヤーが操作するパドルオブジェクトを管理
+ * 
+ * @class
+ * @description 入力システムと連携した位置更新、
+ * アイテム効果の適用と管理、視覚的なフィードバック表示を処理
+ */
 class Paddle {
+    /**
+     * Paddleコンストラクタ
+     * @param {number} [x=width/2] - 初期X座標
+     * @param {number} [y=height-50] - 初期Y座標
+     */
     constructor(x, y) {
         this.position = { x: x || width/2, y: y || height - 50 };
         this.width = gameConfig.paddle.width;

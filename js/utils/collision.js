@@ -15,6 +15,12 @@ function checkCollisions() {
     });
 }
 
+/**
+ * ボールとパドルの衝突判定
+ * @param {Ball} ball - 判定対象のボールオブジェクト
+ * @description ボールがパドルに当たった位置に基づいて反射角度を計算。
+ * パドルの中心に近いほど垂直に、端に近いほど鋭角に反射する
+ */
 // ボール vs パドル衝突判定
 function checkBallPaddleCollision(ball) {
     let paddleBounds = paddle.getBounds();

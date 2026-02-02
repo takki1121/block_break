@@ -1,7 +1,21 @@
 // Item クラス - アイテム管理
 // アイテムの描画、アニメーション、効果適用を処理
 
+/**
+ * アイテムクラス
+ * ブロック破壊時に出現するアイテムを管理
+ * 
+ * @class
+ * @description アイテムの落下、描画、パドルとの衝突判定、
+ * 効果適用を処理。4種類のアイテムタイプに対応
+ */
 class Item {
+    /**
+     * Itemコンストラクタ
+     * @param {number} x - 初期X座標
+     * @param {number} y - 初期Y座標
+     * @param {string} type - アイテムタイプ ('LIFE_UP', 'PADDLE_EXPAND', 'BALL_MULTIPLY', 'SLOW_PENALTY')
+     */
     constructor(x, y, type) {
         this.position = { x, y };
         this.type = type;

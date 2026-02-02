@@ -4,6 +4,10 @@
 // デバッグモード（キーDで切り替え）
 let DEBUG_MODE = false;
 
+/**
+ * p5.js preload関数 - アセット読み込み
+ * @description ゲーム開始前に音声ファイルと画像をプリロード
+ */
 // p5.js preload関数 - アセット読み込み
 function preload() {
     // 音響システムのプリロード
@@ -20,6 +24,11 @@ function preload() {
     }
 }
 
+/**
+ * p5.js setup関数 - ゲーム全体の初期化処理
+ * @description デバイスに応じたキャンバスサイズを計算し、
+ * ゲームオブジェクト、入力システム、UI、エフェクトを初期化する
+ */
 // p5.js setup関数 - 初期化処理
 function setup() {
     // 初期スケール係数の計算
@@ -55,6 +64,11 @@ function setup() {
     audioSystem.checkLoadStatus();
 }
 
+/**
+ * p5.js draw関数 - メインゲームループ
+ * @description ゲーム状態に応じて描画と更新処理を実行。
+ * OPENING, PLAYING, PAUSED, GAME_OVER, LEVEL_CLEARの5つの状態を管理
+ */
 // p5.js draw関数 - メインゲームループ
 function draw() {
     // 背景クリア
@@ -148,6 +162,12 @@ function getTargetCanvasSize() {
     return { width: baseWidth, height: baseHeight, isPortrait: isPortrait, isSmartphone: isSmartphone };
 }
 
+/**
+ * スケール係数計算関数
+ * @returns {number} 0.4-1.5の範囲のスケール係数
+ * @description ウィンドウサイズに基づいてキャンバスのスケール係数を計算。
+ * アスペクト比を維持しながら、デバイスタイプ別の制限を適用
+ */
 // スケール係数計算関数（アスペクト比維持）
 function calculateScaleFactor() {
     const target = getTargetCanvasSize();
